@@ -1,47 +1,56 @@
 import _mysql
 import sys
 import getpass
+import xml.etree.ElementTree as ET
+
+configurationFilePath = "./arachne-bulkexport-config.xml"
 
 databaseBaseURL = ""
-configuration = [["bauwerk",
-["SELECT `arachneentityidentification`.`ArachneEntityID`, `marbilder`.`Pfad` " 
-+ "FROM `arachneentityidentification`, `marbilder` WHERE `arachneentityidentification`.`ForeignKey` = `marbilder`.`FS_BauwerkID` ORDER BY rand() LIMIT 5000;", "SELECT `arachneentityidentification`.`ArachneEntityID`, `marbilder`.`Pfad`  FROM `arachneentityidentification`, `marbilder` WHERE `arachneentityidentification`.`ForeignKey` = `marbilder`.`FS_BauwerkID` ORDER BY rand() LIMIT 5000;"]
-],["topographie", 
-["SELECT `arachneentityidentification`.`ArachneEntityID`, `marbilder`.`Pfad`  FROM `arachneentityidentification`, `marbilder` WHERE `arachneentityidentification`.`ForeignKey` = `marbilder`.`FS_TopographieID` ORDER BY rand() LIMIT 5000;"]]]
-
+configuration = []
 
 def startBulkImport():
+	loadConfig()
 	fetchData()
-	streamFiles()
+	# streamFiles()
+	
+def loadConfig():
+	e = ET.parse(configurationFilePath).getroot()
+	for category in e:
+		currentCategory = category.attrib['label']
+		queryStrings = []
+		for query in category:
+			queryStrings.append(query.text)
+		
+		configuration.append([currentCategory, queryStrings])
+	
+	print "Configuration loaded."
 	
 def fetchData():	
 	user =     raw_input("Please type in user name for " +databaseBaseURL+ ": ")
 	password = getpass.getpass("Password: ")	
 	database = raw_input("Database: ")
 	
-	for target in configuration :		
-		print target[0]
-		try:
-			con = _mysql.connect(databaseBaseURL, user, password, database)
-				
-			#con.query("SELECT VERSION()")
-			#result = con.use_result()
-			
-			#print "MySQL version: %s" % \
-				#result.fetch_row()[0]
-			
-		except _mysql.Error, e:
-		  
-			print "Error %d: %s" % (e.args[0], e.args[1])
-			sys.exit(1)
-
-		finally:
-			
-			if con:
-				con.close()
-
+	for target in configuration :	
+		print "Querying database for label: " + target[0]	
 		
-		print "Todo"
+		for mySQLString in target[1]:
+			try:
+				con = _mysql.connect(databaseBaseURL, user, password, database)
+				con.query(mySQLString)
+				result = con.use_result()
+				
+				print result.fetch_row()[0]
+				
+			except _mysql.Error, e:
+			  
+				print "Error %d: %s" % (e.args[0], e.args[1])
+				sys.exit(1)
+
+			finally:
+				
+				if con:
+					con.close()
+
 
 def streamFiles():
 	print "Todo"
