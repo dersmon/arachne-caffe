@@ -32,13 +32,17 @@ def loadConfig():
 	print "Configuration loaded."
 	
 def fetchData():	
-	user =     raw_input("Please type in user name for " +databaseBaseURL+ ": ")
+	user =     raw_input("Please type in user name for " + databaseBaseURL + ": ")
 	password = getpass.getpass("Password: ")	
 	
 	con = _mysql.connect(databaseBaseURL, user, password, databaseName)
 				
 	labelIndex = 0
 				
+	mappingPath = "./exports/indexLabelMapping.txt"
+	if not os.path.exists(os.path.dirname(mappingPath)):
+		os.makedirs(os.path.dirname(mappingPath))
+		
 	for target in configuration :	
 		print "Querying database for label: " + target[0]
 		
@@ -61,6 +65,10 @@ def fetchData():
 				sys.exit(1)
 		
 		print "Retreived " + str(counter) + " image paths."
+		
+		with open(mappingPath, "a") as mapping:
+			mapping.write(str(labelIndex) + ": " + target[0] + "\n")	
+			
 		labelIndex += 1
 
 	if con:
@@ -73,6 +81,7 @@ def streamFiles():
 	lastPercent = -1
 	
 	infoPath = "./exports/labelIndexInfo.txt"	
+	deadlinkLog = "./exports/deadLinks.txt"	
 	trainPath = "./exports/train/"
 	testPath = "./exports/test/"
 	
@@ -85,7 +94,7 @@ def streamFiles():
 	if not os.path.exists(os.path.dirname(testPath)):
 		os.makedirs(os.path.dirname(testPath))
 	
-	print "Downloading images, every "+ str(nthForTesting) + "th picked as test image."
+	print "\nDownloading images, every "+ str(nthForTesting) + "th is beeing picked as a test image."
 	
 	for imageInfo in data:
 		
@@ -107,6 +116,9 @@ def streamFiles():
 				
 		except URL.HTTPError, e:			  
 				print "URL Error for " + imageInfo.sourcePath + ", server returned 404."
+				with open(deadlinkLog, "a") as log:
+					log.write(imageInfo.sourcePath  + "\n")	
+			
 		except URL.URLError, e: 			
 				print "URL Error for " + imageInfo.sourcePath + ", no answer."
 		
