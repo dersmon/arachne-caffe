@@ -2,12 +2,12 @@
 
 <config>
    <category label="bauwerk">
-      <queryString>SELECT `arachneentityidentification`.`ArachneEntityID`, `marbilder`.`Pfad`  FROM `arachneentityidentification`, `marbilder` WHERE `arachneentityidentification`.`ForeignKey` = `marbilder`.`FS_BauwerkID` ORDER BY rand() LIMIT 5000;</queryString>
+      <queryString>SELECT `arachneentityidentification`.`ArachneEntityID`, `marbilder`.`Pfad`  FROM `arachneentityidentification`, `marbilder` WHERE `arachneentityidentification`.`ForeignKey` = `marbilder`.`FS_BauwerkID` ORDER BY rand() LIMIT 100;</queryString>
    </category>
    <category label="topographie">
-      <queryString>SELECT `arachneentityidentification`.`ArachneEntityID`, `marbilder`.`Pfad`  FROM `arachneentityidentification`, `marbilder` WHERE `arachneentityidentification`.`ForeignKey` = `marbilder`.`FS_TopographieID` ORDER BY rand() LIMIT 5000;</queryString>
+      <queryString>SELECT `arachneentityidentification`.`ArachneEntityID`, `marbilder`.`Pfad`  FROM `arachneentityidentification`, `marbilder` WHERE `arachneentityidentification`.`ForeignKey` = `marbilder`.`FS_TopographieID` ORDER BY rand() LIMIT 100;</queryString>
    </category>
    <category label="plastik">
-      <queryString>SELECT `arachneentityidentification`.`ArachneEntityID`, `marbilder`.`Pfad`  FROM `arachneentityidentification`, `marbilder`, `objektplastik` WHERE `arachneentityidentification`.`ForeignKey` = `marbilder`.`FS_ObjektID` AND `marbilder`.`FS_ObjektID` = `objektplastik`.`PS_ObjektplastikID` ORDER BY rand() LIMIT 5000;</queryString>
+      <queryString>SELECT `arachneentityidentification`.`ArachneEntityID`, `marbilder`.`Pfad`  FROM `arachneentityidentification`, `marbilder`, `objektplastik` WHERE `arachneentityidentification`.`ForeignKey` = `marbilder`.`FS_ObjektID` AND `marbilder`.`FS_ObjektID` = `objektplastik`.`PS_ObjektplastikID` ORDER BY rand() LIMIT 100;</queryString>
    </category>
 </config>
