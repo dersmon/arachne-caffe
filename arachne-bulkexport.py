@@ -29,7 +29,7 @@ def loadConfig():
 		
 		configuration.append([currentCategory, queryStrings])
 	
-	print "Configuration loaded."
+	print("Configuration loaded.")
 	
 def fetchData():	
 	user =     raw_input("Please type in user name for " + databaseBaseURL + ": ")
@@ -44,7 +44,7 @@ def fetchData():
 		os.makedirs(os.path.dirname(mappingPath))
 		
 	for target in configuration :	
-		print "Querying database for label: " + target[0]
+		print ("Querying database for label: " + target[0])
 		
 		counter = 0	
 		
@@ -60,11 +60,11 @@ def fetchData():
 					counter += 1
 					row = result.fetch_row()
 								
-			except _mysql.Error, e:			  
-				print "Error %d: %s" % (e.args[0], e.args[1])
+			except _mysql.Error as e:			  
+				print ("Error %d: %s" % (e.args[0], e.args[1]))
 				sys.exit(1)
 		
-		print "Retreived " + str(counter) + " image paths."
+		print ("Retreived " + str(counter) + " image paths.")
 		
 		with open(mappingPath, "a") as mapping:
 			mapping.write(str(labelIndex) + ": " + target[0] + "\n")	
@@ -94,7 +94,7 @@ def streamFiles():
 	if not os.path.exists(os.path.dirname(testPath)):
 		os.makedirs(os.path.dirname(testPath))
 	
-	print "\nDownloading images, every "+ str(nthForTesting) + "th is beeing picked as a test image."
+	print ("\nDownloading images, every "+ str(nthForTesting) + "th is beeing picked as a test image.")
 	
 	for imageInfo in data:
 		
@@ -114,22 +114,22 @@ def streamFiles():
 			with open(infoPath, "a") as info:
 				info.write(imageFileName + " " + str(imageInfo.labelIndex) + "\n")	
 				
-		except URL.HTTPError, e:			  
-				print "URL Error for " + imageInfo.sourcePath + ", server returned 404."
-				with open(deadlinkLog, "a") as log:
-					log.write(imageInfo.sourcePath  + "\n")	
+		except URL.HTTPError as e:			  
+			print ("URL Error for " + imageInfo.sourcePath + ", server returned 404.")
+			with open(deadlinkLog, "a") as log:
+				log.write(imageInfo.sourcePath  + "\n")	
 			
-		except URL.URLError, e: 			
-				print "URL Error for " + imageInfo.sourcePath + ", no answer."
+		except URL.URLError as e: 			
+			print ("URL Error for " + imageInfo.sourcePath + ", no answer.")
 		
 		count += 1		
 		percent = int((float(count) / float(len(data))) * 100)
 		
 		if percent - lastPercent > 0:
 			lastPercent = percent
-			print str(lastPercent) + "% done."
+			print (str(lastPercent) + "% done.")
 	
-	print "Done."
+	print ("Done.")
 	
 class ImageInfo:
 	'Container class for image information.'
@@ -141,10 +141,7 @@ class ImageInfo:
 		self.labelIndex = labelIndex
 	
 	def printContents(self):
-		print self.targetPath, ": Arachne Entity ID: ", self.arachneEntityID, ", ", self.sourcePath
+		print (self.targetPath, ": Arachne Entity ID: ", self.arachneEntityID, ", ", self.sourcePath)
 	
 
 startBulkImport()
-
-
-	
