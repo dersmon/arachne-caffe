@@ -80,14 +80,11 @@ def streamFiles():
 	count = 0
 	lastPercent = -1
 	
-	infoPath = "./exports/labelIndexInfo.txt"	
+	
 	deadlinkLog = "./exports/deadLinks.txt"	
 	trainPath = "./exports/train/"
 	testPath = "./exports/test/"
 	
-	if not os.path.exists(os.path.dirname(infoPath)):
-		os.makedirs(os.path.dirname(infoPath))	
-		
 	if not os.path.exists(os.path.dirname(trainPath)):
 		os.makedirs(os.path.dirname(trainPath))
 		
@@ -102,17 +99,21 @@ def streamFiles():
 			image = URL.urlopen(imageInfo.sourcePath)
 			imageFileName = imageInfo.sourcePath.split('/')[-1]
 			targetPath = ""
+			infoPath = ""
 			
 			if count % nthForTesting == 0:
 				targetPath = testPath + imageFileName
+				infoPath = testPath + "labelIndexInfo.txt"
 			else:
 				targetPath = trainPath + imageFileName				
+				infoPath = trainPath + "labelIndexInfo.txt"
+	
 			
 			with open(targetPath, "w+") as out:
 				out.write(image.read())
 			
 			with open(infoPath, "a") as info:
-				info.write(imageFileName + " " + str(imageInfo.labelIndex) + "\n")	
+				info.write(targetPath + " " + str(imageInfo.labelIndex) + "\n")	
 				
 		except URL.HTTPError as e:			  
 			print ("URL Error for " + imageInfo.sourcePath + ", server returned 404.")
