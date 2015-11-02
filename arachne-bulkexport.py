@@ -5,12 +5,15 @@ import xml.etree.ElementTree as ET
 import urllib2 as URL
 import os
 
-configurationFilePath = "./arachne-bulkexport-config.xml"
+configurationFilePath = ""
 databaseBaseURL = "crazyhorse.archaeologie.uni-koeln.de"
 databaseName = "arachne_hohl"
 
+exportsRoot = "./exports/"
+
 nthForTesting = 5
 
+exportFolder = ""
 configuration = []
 data = []
 
@@ -20,26 +23,42 @@ def startBulkImport():
 	streamFiles()
 	
 def loadConfig():
-	e = ET.parse(configurationFilePath).getroot()
-	for category in e:
-		currentCategory = category.attrib['label']
-		queryStrings = []
-		for query in category:
-			queryStrings.append(query.text)
+	global exportFolder
+	global configurationFilePath
+	global configuration
+	
+	try:
+		e = ET.parse(configurationFilePath).getroot()
 		
-		configuration.append([currentCategory, queryStrings])
+		exportFolder = e.attrib['exportName']
+		
+		for category in e:
+			currentCategory = category.attrib['label']
+			queryStrings = []
+			for query in category:
+				queryStrings.append(query.text)
+			
+			configuration.append([currentCategory, queryStrings])
+			
+		print("Configuration loaded.")
 	
-	print("Configuration loaded.")
+	except IOError as e:
+		print("Could not load export configuration at " + configurationFilePath)
+		sys.exit()
 	
-def fetchData():	
+def fetchData():		
+	global exportFolder
+	global configuration
+	
 	user =     raw_input("Please type in user name for " + databaseBaseURL + ": ")
 	password = getpass.getpass("Password: ")	
 	
 	con = _mysql.connect(databaseBaseURL, user, password, databaseName)
 				
 	labelIndex = 0
-				
-	mappingPath = "./exports/indexLabelMapping.txt"
+			
+	mappingPath = exportsRoot + exportFolder + "/indexLabelMapping.txt"
+	
 	if not os.path.exists(os.path.dirname(mappingPath)):
 		os.makedirs(os.path.dirname(mappingPath))
 		
@@ -64,7 +83,7 @@ def fetchData():
 				print ("Error %d: %s" % (e.args[0], e.args[1]))
 				sys.exit(1)
 		
-		print ("Retreived " + str(counter) + " image paths.")
+		print("Retreived " + str(counter) + " image paths.")
 		
 		with open(mappingPath, "a") as mapping:
 			mapping.write(str(labelIndex) + ": " + target[0] + "\n")	
@@ -76,14 +95,15 @@ def fetchData():
 
 
 def streamFiles():
+	global exportFolder
+	global configuration
 	
 	count = 0
-	lastPercent = -1
+	lastPercent = -1	
 	
-	
-	deadlinkLog = "./exports/deadLinks.txt"	
-	trainPath = "./exports/train/"
-	testPath = "./exports/test/"
+	deadlinkLog = exportsRoot + exportFolder + "/deadLinks.txt"	
+	trainPath = exportsRoot + exportFolder + "/train/"
+	testPath = exportsRoot + exportFolder + "/test/"
 	
 	if not os.path.exists(os.path.dirname(trainPath)):
 		os.makedirs(os.path.dirname(trainPath))
@@ -116,12 +136,12 @@ def streamFiles():
 				info.write(targetPath + " " + str(imageInfo.labelIndex) + "\n")	
 				
 		except URL.HTTPError as e:			  
-			print ("URL Error for " + imageInfo.sourcePath + ", server returned 404.")
+			print("URL Error for " + imageInfo.sourcePath + ", server returned 404.")
 			with open(deadlinkLog, "a") as log:
 				log.write(imageInfo.sourcePath  + "\n")	
 			
 		except URL.URLError as e: 			
-			print ("URL Error for " + imageInfo.sourcePath + ", no answer.")
+			print("URL Error for " + imageInfo.sourcePath + ", no answer.")
 		
 		count += 1		
 		percent = int((float(count) / float(len(data))) * 100)
@@ -144,5 +164,10 @@ class ImageInfo:
 	def printContents(self):
 		print (self.targetPath, ": Arachne Entity ID: ", self.arachneEntityID, ", ", self.sourcePath)
 	
+if(len(sys.argv) != 2):
+	print("Please provide path to bulk export config as argument.")
+	sys.exit(1)
+
+configurationFilePath = sys.argv[1]
 
 startBulkImport()
