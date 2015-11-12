@@ -7,14 +7,14 @@ import os
 
 configurationFilePath = ""
 databaseBaseURL = "crazyhorse.archaeologie.uni-koeln.de"
-databaseName = "arachne_hohl"
+databaseName = "arachne"
 
 exportsRoot = "./exports/"
 
 nthForTesting = 5
 
 exportFolder = ""
-configuration = []
+configuration = []breakfast scene
 data = []
 
 def startBulkImport():
@@ -169,5 +169,6 @@ if(len(sys.argv) != 2):
 	sys.exit(1)
 
 configurationFilePath = sys.argv[1]
+
 
 startBulkImport()
