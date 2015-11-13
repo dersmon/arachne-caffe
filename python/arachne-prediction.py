@@ -9,7 +9,7 @@ import json
 
 batchSize = 10
 results = []
-resultPath = "results.json"
+resultPath = "./results.json"
 
 def retreiveImagePaths():
 	print "Todo"
@@ -78,7 +78,7 @@ def evaluateImage(imagePaths):
 		#print top_k
 		#print labels[top_k]
 		
-		results.append([path, [labels[top_k].tolist(), top_k_values.tolist()]])
+		results.append([path.split('/')[-1], [labels[top_k].tolist(), top_k_values.tolist()]])
 		
 		counter += 1
 		
@@ -108,8 +108,6 @@ else:
 
 for pathBatch in imagePaths:
 	evaluateImage(pathBatch)
-
-print str(results)
 
 resultJSON = json.dumps(results)
 
