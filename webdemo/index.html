@@ -1,0 +1,47 @@
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<link href="bootstrap/css/bootstrap.min.css" rel="stylesheet"></link>
+		<link href="style.css" rel="stylesheet"></link>
+		<title>Titel</title>
+		
+	</head>
+	
+	<body>
+		<div class="container-fluid">
+			<div class="row">
+				<div class="col-md-12">
+					<nav>
+						<ul class="pager">
+							<li><a href="#" onclick="lastImage()">Previous</a></li>
+							<li><a href="#" onclick="nextImage()">Next</a></li>
+						</ul>
+					</nav>
+				</div>
+				
+			</div>
+			<div class="row">
+				<div class="col-md-8">
+					<img id="displayedImage">		
+				</div>
+				<div class="col-md-4">
+					
+					<h2>
+						<div class="label label-default" id="imageName"></div>
+					</h2>
+				<br/>
+					<ol id="labelList">
+						
+					</ol>
+				</div>			
+			</div>		
+		</div>
+		
+		
+		<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>		
+		<script type="text/javascript" src="bootstrap/js/bootstrap.min.js"></script>
+		<script type="text/javascript" src="app.js"></script>
+		
+	</body>
+	
+</html>
