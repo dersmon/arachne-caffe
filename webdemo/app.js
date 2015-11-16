@@ -33,8 +33,6 @@ function updateInfo() {
 			+ '</div>'
 		+ '</li>';
 	}
-		//+ ", labels: " + imageData[currentSelection][1][0] 
-	//	+ ", probabilities: " + imageData[currentSelection][1][1];
 }
 
 function lastImage() {
@@ -61,9 +59,5 @@ $(function() {
 	   imageData = data;	   
 	   currentSelection = 0;   
 	   updateSelection();
-	
-	   // imageContainer.innerHTML = data[0][0] + ", labels: " + data[0][1][0];
-	   // console.log(imageContainer);
-	   // imageContainer.appendChild(img);
    });
 })
