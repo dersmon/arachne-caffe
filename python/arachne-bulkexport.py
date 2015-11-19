@@ -9,12 +9,12 @@ configurationFilePath = ""
 databaseBaseURL = "crazyhorse.archaeologie.uni-koeln.de"
 databaseName = "arachne"
 
-exportsRoot = "./exports/"
+exportsRoot = "./dumps/"
 
 nthForTesting = 5
 
 exportFolder = ""
-configuration = []breakfast scene
+configuration = []
 data = []
 
 def startBulkImport():
@@ -86,7 +86,7 @@ def fetchData():
 		print("Retreived " + str(counter) + " image paths.")
 		
 		with open(mappingPath, "a") as mapping:
-			mapping.write(str(labelIndex) + ": " + target[0] + "\n")	
+			mapping.write(target[0] + " " str(labelIndex) + "\n")	
 			
 		labelIndex += 1
 
@@ -123,10 +123,10 @@ def streamFiles():
 			
 			if count % nthForTesting == 0:
 				targetPath = testPath + imageFileName
-				infoPath = testPath + "labelIndexInfo.txt"
+				infoPath = exportsRoot + exportFolder + "/label_index_info_test.txt"
 			else:
 				targetPath = trainPath + imageFileName				
-				infoPath = trainPath + "labelIndexInfo.txt"
+				infoPath = exportsRoot + exportFolder + "/label_index_info_train.txt"
 	
 			
 			with open(targetPath, "w+") as out:
