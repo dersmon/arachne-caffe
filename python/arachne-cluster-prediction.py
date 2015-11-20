@@ -11,11 +11,12 @@ from scipy.misc import imresize
 import json
 import matplotlib.pyplot as plt
 
-trainingInfo = './dumps/six_labels_small/label_index_info_train.txt'
-testInfo = './dumps/six_labels_small/label_index_info_test.txt'
-labelInfo = './dumps/six_labels_small/indexLabelMapping.txt'
+trainingInfo = './dumps/bauwerk_topo_buchseite_plastik_keramik_siegel/label_index_info_train.txt'
+testInfo = './dumps/bauwerk_topo_buchseite_plastik_keramik_siegel/label_index_info_test.txt'
+labelInfo = './dumps/bauwerk_topo_buchseite_plastik_keramik_siegel/indexLabelMapping.txt'
 
 trainingActivationVectorsFile = './trainingVectors.json'
+testActivationVectorsFile = './testVectors.json'
 
 overallMaxValue = 0;
 
@@ -24,6 +25,7 @@ batchLimit = 0
 
 labelCount = 6
 trainingActivationVectors = []
+testActivationVectors = []
 
 def readDumpInfo(path):	
 	
@@ -119,27 +121,74 @@ def kMeans(activationVectors):
 	
 	centers = []
 	count = 0
-	running = true
+	running = 1
 	while count < labelCount:
-		centers.append(random.choice(activationVectors)[1])
-		count += 1
+		centers.append({'position':random.choice(activationVectors)[1], 'clusterMembers': []})
+		count += 1	
+			
+	kMeansIteration(centers, activationVectors)
 	
-	for activationVector in activationVectors:
+	count = 0
+	
+	while count < 100:
+		centers = kMeansIteration(centers, activationVectors)
+		count += 1
+		centerCounter = 0
+		#print '\n'
+		for center in centers:
+			#print 'Cluster ' + str(centerCounter + 1) + ', labels:'
+			points = [activationVectors[i] for i in center['clusterMembers']]
+			labels = [0, 0, 0, 0, 0, 0]
+			
+			for point in points:
+				labels[point[0]] += 1			
+			
+			#print str(labels)
+			centerCounter += 1
+	
+	return centers
+
+def kMeansIteration(centers, activations):
+	
+	tempCenters = []
+	updatedCenters = []
+	
+	for center in centers:
+		tempCenters.append({'position':center.get('position'), 'clusterMembers': []})	
+		
+	count = 0
+	for activation in activations:
 		
 		distances = []			
 		
 		# Calculate distance to centers
 		for center in centers:
-			difference = center - activationVector[1]
+			difference = center['position'] - activation[1]
 			distances.append(np.linalg.norm(difference))
 			
-		# Assign to closest center
-		print str(distances)
-	# Adjust centers towards center of assigned vectors
-	
+		# Assign to closest center		
+		members = tempCenters[np.argmin(distances)].get('clusterMembers')
+		members.append(count)		
+		tempCenters[np.argmin(distances)]['clusterMembers'] = members
 		
+		count += 1
 	
-	print 'Todo'
+	
+	# Adjust centers towards mean of assigned vectors
+	
+	for center in tempCenters:
+		#print "Assigned points: " + str(center['clusterMembers'])
+		points = [activations[i][1] for i in center['clusterMembers']]	
+	
+		updatedPosition = np.sum(points, axis=0)
+		updatedPosition = updatedPosition / len(center['clusterMembers'])
+		#print 'old position: ' + str(center['position']) + ', length: ' + str(len(center['position']))
+		#print 'new position: ' + str(updatedPosition) + ', length: ' + str(updatedPosition.shape[0])
+		
+		updatedCenters.append({'position':updatedPosition, 'clusterMembers':center['clusterMembers']})
+	
+	return updatedCenters	
+	
 
 def writeVectorsToJSON(activationVectors, filePath):
 	
@@ -199,17 +248,86 @@ def drawGrids(activations):
 				
 	plt.show()
 
-pathArgument = ""
+trainingJSONPath = ""
+testJSONPath = ""
 
 if(len(sys.argv) < 2):
 	"No activation vectors provided."
 else:
-	pathArgument = sys.argv[1]
+	trainingJSONPath = sys.argv[1]
+
+if(len(sys.argv) < 3):
+	"No activation vectors provided."
+else:
+	testJSONPath = sys.argv[2]
 	
-if pathArgument.endswith('.json'):
-	readVectorsFromJSON(pathArgument)
+
+if trainingJSONPath.endswith('.json'):
+	trainingActivationVectors = readVectorsFromJSON(trainingJSONPath)
 else:
 	trainingActivationVectors = readDumpInfo(trainingInfo)
 	writeVectorsToJSON(trainingActivationVectors, trainingActivationVectorsFile)
 
+if testJSONPath.endswith('.json'):
+	testActivationVectors = readVectorsFromJSON(testJSONPath)
+else:
+	testActivationVectors = readDumpInfo(testInfo)
+	writeVectorsToJSON(testActivationVectors, testActivationVectorsFile)
+
+
+clusterCenters = kMeans(trainingActivationVectors)
+
+labelPerCluster = []
+
+clusterCounter = 0
+
+for cluster in clusterCenters:
+	#print 'Cluster ' + str(clusterCounter + 1) + ', labels:'
+	points = [trainingActivationVectors[i] for i in cluster['clusterMembers']]
+	labels = [0, 0, 0, 0, 0, 0]
+		
+	for point in points:
+		labels[point[0]] += 1			
+			
+	#print str(labels)
+	
+	labelPerCluster.append({'clusterId': clusterCounter, 'position': cluster['position'], 'label': np.argmax(labels)})
+	clusterCounter += 1
+
+
+
+
+
+
+tempCenters = []
+updatedCenters = []
+
+correct = 0
+wrong = 0
+
+correctPerLabel = [0, 0, 0, 0, 0, 0]
+wrongPerLabel = [0, 0, 0, 0, 0, 0]
+
+for activation in testActivationVectors:
+	
+	distances = []			
+	
+	# Calculate distance to centers
+	for center in clusterCenters:
+		difference = center['position'] - activation[1]
+		distances.append(np.linalg.norm(difference))
+		
+	for center in labelPerCluster:
+		if center['clusterId'] == np.argmin(distances):
+			#print 'Assigned cluster ' + str(center['clusterId']) + ' with label ' + str(center['label']) + ' to image with label ' + str(activation[0])
+			if center['label'] == activation[0]:
+				correct += 1
+				correctPerLabel[activation[0]] += 1
+			else:
+				wrong += 1				
+				wrongPerLabel[activation[0]] += 1
+
+print 'correct: ' + str(correct) + ', wrong: ' + str(wrong) + ', ratio: ' + str(wrong/correct)
+print 'correct per label: ' + str(correctPerLabel)
+print 'wrong per label: 'str(wrongPerLabel)
 #drawGrids(activationsVector)
