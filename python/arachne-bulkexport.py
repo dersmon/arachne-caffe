@@ -86,7 +86,7 @@ def fetchData():
 		print("Retreived " + str(counter) + " image paths.")
 		
 		with open(mappingPath, "a") as mapping:
-			mapping.write(target[0] + " " str(labelIndex) + "\n")	
+			mapping.write(target[0] + " " + str(labelIndex) + "\n")	
 			
 		labelIndex += 1
 
