@@ -251,7 +251,9 @@ def clusterAnalysis(clusters):
 	for cluster in clusters:
 		print 'Cluster ' + str(counter) + ', labels:'
 		points =[int(trainingActivationVectors[i][0]) for i in cluster['clusterMembers']]
-		labelDistribution = [0, 0, 0, 0, 0, 0]
+		
+		
+		labelDistribution = [0] * labelCount
 			
 		for point in points:
 			labelDistribution[point] += 1			
@@ -273,8 +275,8 @@ def clusterTest(clusters, testVectors):
 	correct = 0
 	wrong = 0
 
-	correctPerLabel = [0, 0, 0, 0, 0, 0]
-	wrongPerLabel = [0, 0, 0, 0, 0, 0]
+	correctPerLabel = [0] * labelCount
+	wrongPerLabel = [0] * labelCount
 
 	for activation in testVectors:
 		
@@ -301,18 +303,58 @@ def clusterTest(clusters, testVectors):
 	print 'correct per label: ' + str(correctPerLabel)
 	print 'wrong per label: ' + str(wrongPerLabel)			
 	
-def nearestNeighbours(labeledVectors, newVectors):
+def nNearestNeighbours(labeledVectors, newVectors, n):
 	
-	result = []
+	print 'Searching for ' + str(n) + ' nearest neighbours.'
+	
+	results = []
 	
 	for newVector in newVectors:
 		distances = []
+		
 		for labeledVector in labeledVectors:
 			difference = labeledVector[1:] - newVector[1:]
 			distances.append([int(labeledVector[0]), np.linalg.norm(difference)])
 		
+			
 		distances = sorted(distances, key=lambda difference: difference[1])		
-		print str(distances)
+		nNearest = []
+		distribution = [0] * labelCount
+		count = 0
+		
+		for distance in distances:
+			distribution[distance[0]] += 1
+			count += 1
+			nNearest = distance
+			if count == n:
+				break
+		
+		mostNeighboursId = np.argmax(distribution)
+		
+		results.append({'labelId': int(newVector[0]), 'neighbours': nNearest, 'distribution': distribution, 'mostNeighboursId':mostNeighboursId })
+	
+	return results
+
+def nNearestAnalysed(results):
+	
+	correct = 0
+	wrong = 0
+	
+	correctDistribution = [0] * labelCount
+	wrongDistribution = [0] * labelCount
+	
+	for result in results:
+		if result['labelId'] == result['mostNeighboursId']:
+			correct += 1
+			correctDistribution[result['labelId']] += 1
+		else:
+			wrong += 1
+			wrongDistribution[result['labelId']] += 1
+		
+	print 'correct: ' + str(correct) + ', wrong: ' + str(wrong) + ', ratio: ' + str(float(correct)/(wrong + correct))
+	print 'correct per label: ' + str(correctDistribution)
+	print 'wrong per label: ' + str(wrongDistribution)	
+	
 
 
 trainingJSONPath = ""
@@ -342,12 +384,13 @@ else:
 	writeVectorsToJSON(testActivationVectors, testActivationVectorsFile)
 
 
-#clusters = clusterAnalysis(kMeans(trainingActivationVectors))
+clusters = clusterAnalysis(kMeans(trainingActivationVectors))
 
-#clusterTest(clusters, testActivationVectors)
+clusterTest(clusters, testActivationVectors)
 
-nNearestNeighbours(trainingActivationVectors, testActivationVectors)
+#neighbours = nNearestNeighbours(trainingActivationVectors, testActivationVectors, int(len(testActivationVectors) * 0.1))
 
+#nNearestAnalysed(neighbours)
 
 #net, transformer = getNetAndTransformer()
 
