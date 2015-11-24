@@ -384,13 +384,13 @@ else:
 	writeVectorsToJSON(testActivationVectors, testActivationVectorsFile)
 
 
-clusters = clusterAnalysis(kMeans(trainingActivationVectors))
+#clusters = clusterAnalysis(kMeans(trainingActivationVectors))
 
-clusterTest(clusters, testActivationVectors)
+#clusterTest(clusters, testActivationVectors)
 
-#neighbours = nNearestNeighbours(trainingActivationVectors, testActivationVectors, int(len(testActivationVectors) * 0.1))
+neighbours = nNearestNeighbours(trainingActivationVectors, testActivationVectors, int(len(trainingActivationVectors) * 0.01))
 
-#nNearestAnalysed(neighbours)
+nNearestAnalysed(neighbours)
 
 #net, transformer = getNetAndTransformer()
 
