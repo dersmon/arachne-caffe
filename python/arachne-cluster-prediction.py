@@ -11,9 +11,9 @@ from scipy.misc import imresize
 import json
 import matplotlib.pyplot as plt
 
-trainingInfo = './dumps/bauwerk_topo_buchseite_plastik_keramik_siegel/label_index_info_train.txt'
-testInfo = './dumps/bauwerk_topo_buchseite_plastik_keramik_siegel/label_index_info_test.txt'
-labelInfo = './dumps/bauwerk_topo_buchseite_plastik_keramik_siegel/indexLabelMapping.txt'
+trainingInfo = './dumps/five_labels_small/label_index_info_train.txt'
+testInfo = './dumps/five_labels_small/label_index_info_test.txt'
+labelInfo = './dumps/five_labels_small/indexLabelMapping.txt'
 
 trainingActivationVectorsFile = './trainingVectors.json'
 testActivationVectorsFile = './testVectors.json'
@@ -27,6 +27,25 @@ labelCount = 6
 trainingActivationVectors = []
 testActivationVectors = []
 
+def getNetAndTransformer():
+	root = './'
+	caffe_root = '/home/simon/Workspaces/caffe/'
+	
+	MODEL_FILE = root + 'examples/trained_models/custom_alex_shortened/hybridCNN_deploy_FC7.prototxt'
+	PRETRAINED = root + 'examples/trained_models/custom_alex_shortened/hybridCNN_iter_700000.caffemodel'
+
+	net = caffe.Net(MODEL_FILE, PRETRAINED, caffe.TEST)
+	caffe.set_mode_cpu()
+
+	transformer = caffe.io.Transformer({'data': net.blobs['data'].data.shape})
+	transformer.set_transpose('data', (2,0,1)) # height*width*channel -> channel*height*width
+	mean_file = np.array([104,117,123]) 
+	transformer.set_mean('data', mean_file) #### subtract mean ####
+	transformer.set_raw_scale('data', 255) # pixel value range
+	transformer.set_channel_swap('data', (2,1,0)) # RGB -> BGR
+	
+	return (net, transformer)
+
 def readDumpInfo(path):	
 	
 	global batchSize, batchLimit
@@ -35,42 +54,6 @@ def readDumpInfo(path):
 	imageCount = 0
 	
 	activationVectors = []
-	
-	with open(path, "r") as result:
-		currentBatch = []
-		currentBatchSize = 0
-		batchCount = 0
-		for line in result.readlines():
-			
-			split = line.strip().split(' ')
-			
-			info = {'labelId':int(split[1]), 'path':split[0]}
-			
-			currentBatch.append(info)
-			currentBatchSize += 1
-			
-			if currentBatchSize == batchSize:
-				activationVectors.extend(evaluateImages(currentBatch))
-				currentBatchSize = 0
-				currentBatch = []
-				batchCount += 1
-								
-				print 'Activations collected: ' + str(len(activationVectors))
-					
-				if batchCount == batchLimit and batchLimit != 0:
-					break;			
-	
-	return activationVectors
-		
-def evaluateImages(imageBatch):
-		
-	global overallMaxValue
-	
-	if len(imageBatch) == 0:
-		print "No images found." 
-		sys.exit()
-		
-	batchActivations = []
 	
 	root = './'
 	caffe_root = '/home/simon/Workspaces/caffe/'
@@ -87,33 +70,71 @@ def evaluateImages(imageBatch):
 	transformer.set_mean('data', mean_file) #### subtract mean ####
 	transformer.set_raw_scale('data', 255) # pixel value range
 	transformer.set_channel_swap('data', (2,1,0)) # RGB -> BGR
+	
+	with open(path, "r") as result:
+		currentBatch = []
+		currentBatchSize = 0
+		batchCount = 0
+		for line in result.readlines():
+			
+			split = line.strip().split(' ')
+			
+			info = {'labelId':int(split[1]), 'path':split[0]}
+			
+			currentBatch.append(info)
+			currentBatchSize += 1
+			
+			if currentBatchSize == batchSize:
+				
+				activationVectors.extend(evaluateImages(net, transformer, currentBatch))
+				
+				currentBatchSize = 0
+				currentBatch = []
+				batchCount += 1
+								
+				print 'Activations collected: ' + str(len(activationVectors))
+				if batchCount == batchLimit and batchLimit != 0:
+					break;			
+		
+		activationVectors.extend(evaluateImages(net, transformer, currentBatch))
+				
+					
+	print 'Activations collected: ' + str(len(activationVectors))
+	return activationVectors
+		
+def evaluateImages(net, transformer, imageBatch):
+		
+	global overallMaxValue
 
+	print 'batch size: ' + str(len(imageBatch))
+	#blob = caffe.proto.caffe_pb2.BlobProto()
+	#data = open(root + 'examples/trained_models/custom_alex_shortened/hybridCNN_mean.binaryproto' , 'rb' ).read()
+	#blob.ParseFromString(data)
 
-	blob = caffe.proto.caffe_pb2.BlobProto()
-	data = open(root + 'examples/trained_models/custom_alex_shortened/hybridCNN_mean.binaryproto' , 'rb' ).read()
-	blob.ParseFromString(data)
+	#meanArray = np.array( caffe.io.blobproto_to_array(blob) ).transpose(3,2,1,0)
+	#meanArray = meanArray[:,:,:,0]
 
-	meanArray = np.array( caffe.io.blobproto_to_array(blob) ).transpose(3,2,1,0)
-	meanArray = meanArray[:,:,:,0]
-
-	imageData = map(lambda x: transformer.preprocess('data',caffe.io.load_image(x.get('path'))), imageBatch)
+	#np.vstack((a,b))
+	batchActivations = []
+	imageData = map(lambda x: transformer.preprocess('data',caffe.io.load_image(x.get('path'))) , imageBatch)
 	
 	net.blobs['data'].reshape(len(imageBatch), net.blobs['data'].shape[1], net.blobs['data'].shape[2], net.blobs['data'].shape[3])
 	net.blobs['data'].data[...] = imageData
 	
 	out = net.forward()
-
+	
 	counter = 0
 	for image in imageBatch:		
 		
 		maxValue = max(out['fc7'][counter])		
 		if maxValue > overallMaxValue:
 			overallMaxValue = maxValue
-			
-		batchActivations.append([image.get('labelId'), out['fc7'][counter]])
 		
+		batchActivations.append(np.hstack((image.get('labelId'), out['fc7'][counter])))		
 		counter += 1
 		
+	# print str(batchActivations[:,0]) # prints label row
+	
 	return batchActivations
 		
 def kMeans(activationVectors):
@@ -123,27 +144,24 @@ def kMeans(activationVectors):
 	count = 0
 	running = 1
 	while count < labelCount:
-		centers.append({'position':random.choice(activationVectors)[1], 'clusterMembers': []})
+		centers.append({'position':random.choice(activationVectors)[1:], 'clusterMembers': []})
 		count += 1	
 			
-	kMeansIteration(centers, activationVectors)
-	
 	count = 0
-	
-	while count < 100:
+	while count < 50:
 		centers = kMeansIteration(centers, activationVectors)
 		count += 1
 		centerCounter = 0
-		#print '\n'
+		print '\n'
 		for center in centers:
-			#print 'Cluster ' + str(centerCounter + 1) + ', labels:'
+			print 'Cluster ' + str(centerCounter + 1) + ', labels:'
 			points = [activationVectors[i] for i in center['clusterMembers']]
 			labels = [0, 0, 0, 0, 0, 0]
 			
 			for point in points:
-				labels[point[0]] += 1			
+				labels[int(point[0])] += 1			
 			
-			#print str(labels)
+			print str(labels)
 			centerCounter += 1
 	
 	return centers
@@ -163,7 +181,7 @@ def kMeansIteration(centers, activations):
 		
 		# Calculate distance to centers
 		for center in centers:
-			difference = center['position'] - activation[1]
+			difference = center['position'] - activation[1:]
 			distances.append(np.linalg.norm(difference))
 			
 		# Assign to closest center		
@@ -178,10 +196,12 @@ def kMeansIteration(centers, activations):
 	
 	for center in tempCenters:
 		#print "Assigned points: " + str(center['clusterMembers'])
-		points = [activations[i][1] for i in center['clusterMembers']]	
+		points = [activations[i][1:] for i in center['clusterMembers']]	
 	
 		updatedPosition = np.sum(points, axis=0)
-		updatedPosition = updatedPosition / len(center['clusterMembers'])
+		if len(center['clusterMembers']) != 0:
+			updatedPosition /= len(center['clusterMembers'])
+		
 		#print 'old position: ' + str(center['position']) + ', length: ' + str(len(center['position']))
 		#print 'new position: ' + str(updatedPosition) + ', length: ' + str(updatedPosition.shape[0])
 		
@@ -193,27 +213,26 @@ def kMeansIteration(centers, activations):
 def writeVectorsToJSON(activationVectors, filePath):
 	
 	activationVectorsAsList = [];
-
-	for vector in activationVectors:	
-		activationVectorsAsList.append([vector[0], vector[1].tolist()])
-		
-	resultJSON = json.dumps(activationVectorsAsList)
-
-	if not os.path.exists(os.path.dirname(filePath)):
+	if not os.path.exists(os.path.dirname(filePath)):				
 		os.makedirs(os.path.dirname(filePath))
-
 	with open(filePath, "a") as outputFile:
-		outputFile.write(resultJSON)	
+		print 'Writing to file ' + str(filePath)
+		for vector in activationVectors:	
+			activationVectorsAsList.append(vector.tolist())
+	
+		resultJSON = json.dumps(activationVectorsAsList)
+		
+		outputFile.write(resultJSON)			
 
 def readVectorsFromJSON(filePath):
 	
-	with open(filePath) as fileData:
+	with open(filePath, 'r') as fileData:
 		data = json.load(fileData)
 	
 	activationVectors = []
 	
 	for vector in data:	
-		activationVectors.append([vector[0], np.array(vector[1])])
+		activationVectors.append(np.array(vector))
 		
 	return activationVectors
 
@@ -265,7 +284,7 @@ else:
 if trainingJSONPath.endswith('.json'):
 	trainingActivationVectors = readVectorsFromJSON(trainingJSONPath)
 else:
-	trainingActivationVectors = readDumpInfo(trainingInfo)
+	trainingActivationVectors = readDumpInfo(trainingInfo) 
 	writeVectorsToJSON(trainingActivationVectors, trainingActivationVectorsFile)
 
 if testJSONPath.endswith('.json'):
@@ -282,22 +301,17 @@ labelPerCluster = []
 clusterCounter = 0
 
 for cluster in clusterCenters:
-	#print 'Cluster ' + str(clusterCounter + 1) + ', labels:'
+	print 'Cluster ' + str(clusterCounter + 1) + ', labels:'
 	points = [trainingActivationVectors[i] for i in cluster['clusterMembers']]
 	labels = [0, 0, 0, 0, 0, 0]
 		
 	for point in points:
-		labels[point[0]] += 1			
+		labels[int(point[0])] += 1			
 			
-	#print str(labels)
+	print str(labels)
 	
 	labelPerCluster.append({'clusterId': clusterCounter, 'position': cluster['position'], 'label': np.argmax(labels)})
 	clusterCounter += 1
-
-
-
-
-
 
 tempCenters = []
 updatedCenters = []
@@ -314,20 +328,43 @@ for activation in testActivationVectors:
 	
 	# Calculate distance to centers
 	for center in clusterCenters:
-		difference = center['position'] - activation[1]
+		difference = center['position'] - activation[1:]
 		distances.append(np.linalg.norm(difference))
 		
 	for center in labelPerCluster:
 		if center['clusterId'] == np.argmin(distances):
 			#print 'Assigned cluster ' + str(center['clusterId']) + ' with label ' + str(center['label']) + ' to image with label ' + str(activation[0])
-			if center['label'] == activation[0]:
+			if center['label'] == int(activation[0]):
 				correct += 1
-				correctPerLabel[activation[0]] += 1
+				correctPerLabel[int(activation[0])] += 1
 			else:
 				wrong += 1				
-				wrongPerLabel[activation[0]] += 1
+				wrongPerLabel[int(activation[0])] += 1
 
-print 'correct: ' + str(correct) + ', wrong: ' + str(wrong) + ', ratio: ' + str(wrong/correct)
+print 'correct: ' + str(correct) + ', wrong: ' + str(wrong) + ', ratio: ' + str(float(correct)/(wrong + correct))
 print 'correct per label: ' + str(correctPerLabel)
-print 'wrong per label: 'str(wrongPerLabel)
-#drawGrids(activationsVector)
+print 'wrong per label: ' + str(wrongPerLabel)
+
+net, transformer = getNetAndTransformer()
+
+testImage = {'labelId':0, 'path':'/home/simon/Workspaces/python/arachne-caffe/examples/images/Statue_of_Liberty_Paris_001.jpg'}
+
+testVector = evaluateImages(net, transformer, [testImage])[0]
+print testVector.shape
+distances = []			
+	
+# Calculate distance to centers
+for center in clusterCenters:
+	difference = center['position'] - testVector[1:]
+	distances.append(np.linalg.norm(difference))
+
+print str(distances)
+print str(labelPerCluster)
+	
+for center in labelPerCluster:
+	if center['clusterId'] == np.argmin(distances):
+		print 'Assigned cluster ' + str(center['clusterId']) + ' with label ' + str(center['label']) + ' to image with label ' + str(testVector[0])
+			
+
+		
+##drawGrids(activationsVector)
