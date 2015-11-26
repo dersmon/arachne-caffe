@@ -359,41 +359,18 @@ def drawGrids(activations):
 '''
 
 def drawVectors(vectors):
-	grid = []
-	counter = 0
-	
-	perLabelGrids = [[]] * labelCount
-	
-	print perLabelGrids
-	
-	for vector in vectors:
-				
-		grid.append(vector[1:])
+	labels = np.array(vectors)[:,0]
+	grid = np.array(vectors)[:,1:]
 		
-		perLabelGrids[int(vector[0])].append(vector[1:])
-		
-		counter += 1
-		
-		#if counter == 300:
-		#	break
+	maxValue = np.amax(grid)	
 	
+	scaled = grid * (255 / maxValue)
 	
+	scaled = scaled.reshape(scaled.shape[0],4,1024)
+	scaled = scaled.mean(axis=1)
 	
-	grid = np.array(grid)
-	print grid.shape # 3203072
-	scaling = grid.reshape(grid.shape[0],4,1024)
-	print scaling.shape
-	scaling = scaling.mean(axis=1)
-	print str(grid.shape) + ", " + str(scaling.shape)
-	
-	maxValue = np.amax(scaling)
-	
-	scaling *= (255 / maxValue)
-	
-	plt.imshow(scaling, 'Greys_r', interpolation='none')
-	plt.shape = scaling.shape * 2
-	plt.show()
-	
+	plt.imshow(scaled, 'Greys_r', interpolation='none')
+	plt.show()	
 
 trainingJSONPath = ""
 testJSONPath = ""
