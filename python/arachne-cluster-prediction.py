@@ -202,7 +202,7 @@ def writeVectorsToJSON(activationVectors, filePath):
 		outputFile.write(resultJSON)			
 
 def readVectorsFromJSON(filePath):
-	
+
 	with open(filePath, 'r') as fileData:
 		data = json.load(fileData)
 	
@@ -213,36 +213,6 @@ def readVectorsFromJSON(filePath):
 		
 	return activationVectors
 
-def drawGrids(activations):
-	
-	global overallMaxValue
-	#plt.imshow(grid[1], 'Greys_r', interpolation='none')
-	#plt.show()
-	
-	counter = 0
-	grids = []
-	for activation in activations:
-	
-		grid =  np.reshape(activation[1], (64, 64))
-					
-		scaledGrid = grid * (255 / overallMaxValue)
-			
-		grids.append([activation[0], scaledGrid]);
-		
-		counter += 1
-		
-		if counter == 6*3:
-			break
-	
-	fig, axes = plt.subplots(3, 6, figsize=(12, 6), subplot_kw={'xticks': [], 'yticks': []})
-	
-	fig.subplots_adjust(hspace=0.3, wspace=0.05)
-
-	for ax, grid in zip(axes.flat, grids):
-		ax.imshow(grid[1], 'Greys_r', interpolation='none')
-		ax.set_title(grid[0])
-				
-	plt.show()
 
 def clusterAnalysis(clusters):
 	
@@ -355,10 +325,80 @@ def nNearestAnalysed(results):
 	print 'correct per label: ' + str(correctDistribution)
 	print 'wrong per label: ' + str(wrongDistribution)	
 	
+'''
+def drawGrids(activations):
+	
+	global overallMaxValue
+	#plt.imshow(grid[1], 'Greys_r', interpolation='none')
+	#plt.show()
+	
+	counter = 0
+	grids = []
+	for activation in activations:
+	
+		grid =  np.reshape(activation[1], (64, 64))
+					
+		scaledGrid = grid * (255 / overallMaxValue)
+			
+		grids.append([activation[0], scaledGrid]);
+		
+		counter += 1
+		
+		if counter == 6*3:
+			break
+	
+	fig, axes = plt.subplots(3, 6, figsize=(12, 6), subplot_kw={'xticks': [], 'yticks': []})
+	
+	fig.subplots_adjust(hspace=0.3, wspace=0.05)
 
+	for ax, grid in zip(axes.flat, grids):
+		ax.imshow(grid[1], 'Greys_r', interpolation='none')
+		ax.set_title(grid[0])
+				
+	plt.show()
+'''
+
+def drawVectors(vectors):
+	grid = []
+	counter = 0
+	
+	perLabelGrids = [[]] * labelCount
+	
+	print perLabelGrids
+	
+	for vector in vectors:
+				
+		grid.append(vector[1:])
+		
+		perLabelGrids[int(vector[0])].append(vector[1:])
+		
+		counter += 1
+		
+		#if counter == 300:
+		#	break
+	
+	
+	
+	grid = np.array(grid)
+	print grid.shape # 3203072
+	scaling = grid.reshape(grid.shape[0],4,1024)
+	print scaling.shape
+	scaling = scaling.mean(axis=1)
+	print str(grid.shape) + ", " + str(scaling.shape)
+	
+	maxValue = np.amax(scaling)
+	
+	scaling *= (255 / maxValue)
+	
+	plt.imshow(scaling, 'Greys_r', interpolation='none')
+	plt.shape = scaling.shape * 2
+	plt.show()
+	
 
 trainingJSONPath = ""
 testJSONPath = ""
+
+trainingMaxValue = 0
 
 if(len(sys.argv) < 2):
 	"No activation vectors provided."
@@ -372,25 +412,27 @@ else:
 	
 
 if trainingJSONPath.endswith('.json'):
-	trainingActivationVectors = readVectorsFromJSON(trainingJSONPath)
+	(trainingActivationVectors) = readVectorsFromJSON(trainingJSONPath)
 else:
 	trainingActivationVectors = readDumpInfo(trainingInfo) 
 	writeVectorsToJSON(trainingActivationVectors, trainingActivationVectorsFile)
 
-if testJSONPath.endswith('.json'):
-	testActivationVectors = readVectorsFromJSON(testJSONPath)
-else:
-	testActivationVectors = readDumpInfo(testInfo)
-	writeVectorsToJSON(testActivationVectors, testActivationVectorsFile)
+drawVectors(trainingActivationVectors)
+
+#if testJSONPath.endswith('.json'):
+	#testActivationVectors = readVectorsFromJSON(testJSONPath)
+#else:
+	#testActivationVectors = readDumpInfo(testInfo)
+	#writeVectorsToJSON(testActivationVectors, testActivationVectorsFile)
 
 
 #clusters = clusterAnalysis(kMeans(trainingActivationVectors))
 
 #clusterTest(clusters, testActivationVectors)
 
-neighbours = nNearestNeighbours(trainingActivationVectors, testActivationVectors, int(len(trainingActivationVectors) * 0.01))
+#neighbours = nNearestNeighbours(trainingActivationVectors, testActivationVectors, int(len(trainingActivationVectors) * 0.01))
 
-nNearestAnalysed(neighbours)
+#nNearestAnalysed(neighbours)
 
 #net, transformer = getNetAndTransformer()
 
@@ -411,18 +453,4 @@ nNearestAnalysed(neighbours)
 #for center in labelPerCluster:
 	#if center['clusterId'] == np.argmin(distances):
 		#print 'Assigned cluster ' + str(center['clusterId']) + ' with label ' + str(center['label']) + ' to image with label ' + str(testVector[0])
-			
-'''
--- Metaobject -- 
-
-labelId+vector as numpy array
-labelString
-
--- Utility functions --
-getCluster(clusters, image)
-getNClosest(clusters, image)
-
-
-'''			
-		
-##drawGrids(activationsVector)
+	
