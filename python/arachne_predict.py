@@ -10,24 +10,6 @@ import numpy as np
 import modules.arachne_caffe as anl
 import modules.arachne_KNNPrediction as annp
 
-trainingInfo = './dumps/five_labels_small/label_index_info_train.txt'
-testInfo = './dumps/five_labels_small/label_index_info_test.txt'
-labelInfo = './dumps/five_labels_small/indexLabelMapping.txt'
-
-trainingActivationVectorsFile = './trainingVectors.json'
-testActivationVectorsFile = './testVectors.json'
-
-overallMaxValue = 0;
-
-batchSize = 100
-batchLimit = 0
-
-labelCount = 5
-trainingActivationVectors = []
-testActivationVectors = []
-
-		
-	
 
 
 '''
@@ -80,10 +62,42 @@ def drawVectors(vectors):
 	plt.imshow(scaled, 'Greys_r', interpolation='none')
 	plt.show()
 
+def testKNN(training, test, labelCount):
+		
+	testNeighbours = annp.nearestNeighbours(training, test)
+
+	count = 1
+	data = []
+
+	while count < len(training):
+		(correct, wrong, correctPerLabel, wrongPerLabel) = annp.nNearestAnalysed(testNeighbours, count + 1, labelCount)
+		data.append([count, float(correct)/(wrong + correct)])
+		count += 1
+		
+	data = np.array(data)
+
+	plt.plot(data[:,0], data[:,1], 'k')
+	plt.axis([1, len(data), 0, 1])
+	plt.grid(True)
+	plt.show()
+
+
+trainingInfo = './dumps/five_labels_small/label_index_info_train.txt'
+testInfo = './dumps/five_labels_small/label_index_info_test.txt'
+labelInfo = './dumps/five_labels_small/indexLabelMapping.txt'
+
+trainingActivationVectorsFile = './trainingVectors.json'
+testActivationVectorsFile = './testVectors.json'
+
+batchSize = 100
+batchLimit = 0
+
+labelCount = 5
+trainingActivationVectors = []
+testActivationVectors = []
+
 trainingJSONPath = ""
 testJSONPath = ""
-
-trainingMaxValue = 0
 
 if(len(sys.argv) < 2):
 	"No activation vectors provided."
@@ -107,20 +121,5 @@ if testJSONPath.endswith('.json'):
 else:
 	testActivationVectors = anl.readDumpInfo(testInfo, batchSize, batchLimit)
 	anl.writeVectorsToJSON(testActivationVectors, testActivationVectorsFile)
-	
-testNeighbours = annp.nearestNeighbours(trainingActivationVectors, testActivationVectors)
 
-count = 1
-data = []
-
-while count < len(trainingActivationVectors):
-	(correct, wrong, correctPerLabel, wrongPerLabel) = annp.nNearestAnalysed(testNeighbours, count + 1, labelCount)
-	data.append([count, float(correct)/(wrong + correct)])
-	count += 1
-	
-data = np.array(data)
-
-plt.plot(data[:,0], data[:,1], 'k')
-plt.axis([1, len(data), 0, 1])
-plt.grid(True)
-plt.show()
+#testKNN(trainingActivationVectors, testActivationVectors, labelCount)
