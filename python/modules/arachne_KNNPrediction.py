@@ -8,11 +8,10 @@ def nearestNeighbours(labeledVectors, newVectors):
 	
 	for newVector in newVectors:
 		distances = []
-		
+
 		for labeledVector in labeledVectors:
 			difference = labeledVector[1:] - newVector[1:]
 			distances.append([int(labeledVector[0]), np.linalg.norm(difference)])
-		
 			
 		distances = sorted(distances, key=lambda difference: difference[1])		
 		
@@ -20,7 +19,7 @@ def nearestNeighbours(labeledVectors, newVectors):
 		
 	return results
 
-def nNearestAnalysed(results, n, labelCount):
+def kNearestAnalysed(results, k, labelCount):
 
 	correct = 0
 	wrong = 0
@@ -34,7 +33,7 @@ def nNearestAnalysed(results, n, labelCount):
 		
 		count = 0
 		nNearest = []		
-		while count < n:
+		while count < k:
 			nNearest.append(result['neighbours'][count])
 			count += 1
 			

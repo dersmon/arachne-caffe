@@ -69,7 +69,7 @@ def testKNN(training, test, labelCount):
 
 	while count < len(training):
 		print 'Calculating prediction for ' + str(count + 1) + ' nearest neighbours.' 
-		(correct, wrong, correctPerLabel, wrongPerLabel) = aknnp.nNearestAnalysed(testNeighbours, count + 1, labelCount)
+		(correct, wrong, correctPerLabel, wrongPerLabel) = aknnp.kNearestAnalysed(testNeighbours, count + 1, labelCount)
 		data.append([count, float(correct)/(wrong + correct)])
 		count += 1
 		
