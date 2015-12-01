@@ -1,8 +1,12 @@
-#os.environ['GLOG_minloglevel'] = '2' 
+import sys
+import os
+os.environ['GLOG_minloglevel'] = '2' 
 import caffe
-#os.environ['GLOG_minloglevel'] = '0'
+os.environ['GLOG_minloglevel'] = '0'
 import json
 import numpy as np
+from tempfile import TemporaryFile
+
 
 def getNetAndTransformer():
 	
@@ -48,7 +52,6 @@ def readDumpInfo(path, batchSize, batchLimit):
 			currentBatchSize += 1
 			
 			if currentBatchSize == batchSize:
-				
 				activationVectors.extend(evaluateImageBatch(net, transformer, currentBatch))
 				
 				currentBatchSize = 0
@@ -56,12 +59,14 @@ def readDumpInfo(path, batchSize, batchLimit):
 				batchCount += 1
 								
 				print str(len(activationVectors))
+						
 				if batchCount == batchLimit and batchLimit != 0:
-					break;			
-		
-		activationVectors.extend(evaluateImageBatch(net, transformer, currentBatch))
+					break;	
+			
+			
+	activationVectors.extend(evaluateImageBatch(net, transformer, currentBatch))				
 					
-	print str(len(activationVectors))
+	print 'Final number of images processed: ' + str(len(activationVectors))
 	
 	return activationVectors
 
@@ -84,28 +89,24 @@ def evaluateImageBatch(net, transformer, imageBatch):
 	return batchActivations
 
 def writeVectorsToJSON(activationVectors, filePath):
-	
-	activationVectorsAsList = [];
+	print 'Writing file ' + filePath
+	#activationVectorsAsList = [];
 	if not os.path.exists(os.path.dirname(filePath)):				
 		os.makedirs(os.path.dirname(filePath))
-	with open(filePath, "a") as outputFile:
-		print 'Writing to file ' + str(filePath)
-		for vector in activationVectors:	
-			activationVectorsAsList.append(vector.tolist())
+	with open(filePath, "w") as outputFile:
+		np.save(outputFile, activationVectors)
+		#print 'Writing to file ' + str(filePath)
+		#for vector in activationVectors:	
+			#activationVectorsAsList.append(vector.tolist())
 	
-		resultJSON = json.dumps(activationVectorsAsList)
+		#resultJSON = json.dumps(activationVectorsAsList)
 		
-		outputFile.write(resultJSON)			
+		#outputFile.write(resultJSON)			
 
 def readVectorsFromJSON(filePath):
-
-	with open(filePath, 'r') as fileData:
-		data = json.load(fileData)
-	
-	activationVectors = []
-	
-	for vector in data:	
-		activationVectors.append(np.array(vector))
+	print 'Opening file: ' + filePath
+	with open(filePath, 'r') as inputFile:
+		return np.load(inputFile)
 		
-	return activationVectors
+	
 

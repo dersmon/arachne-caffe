@@ -1,14 +1,12 @@
 import sys
 import os
 import cv2
-import Image
-import random
-from scipy.misc import imresize
 import matplotlib.pyplot as plt
 import numpy as np
 
 import modules.arachne_caffe as anl
-import modules.arachne_KNNPrediction as annp
+import modules.arachne_KNNPrediction as aknnp
+import modules.arachne_KMeansPrediction as akmp
 
 
 
@@ -64,13 +62,14 @@ def drawVectors(vectors):
 
 def testKNN(training, test, labelCount):
 		
-	testNeighbours = annp.nearestNeighbours(training, test)
+	testNeighbours = aknnp.nearestNeighbours(training, test)
 
-	count = 1
+	count = 0
 	data = []
 
 	while count < len(training):
-		(correct, wrong, correctPerLabel, wrongPerLabel) = annp.nNearestAnalysed(testNeighbours, count + 1, labelCount)
+		print 'Calculating prediction for ' + str(count + 1) + ' nearest neighbours.' 
+		(correct, wrong, correctPerLabel, wrongPerLabel) = aknnp.nNearestAnalysed(testNeighbours, count + 1, labelCount)
 		data.append([count, float(correct)/(wrong + correct)])
 		count += 1
 		
@@ -81,15 +80,28 @@ def testKNN(training, test, labelCount):
 	plt.grid(True)
 	plt.show()
 
+def testKMeans(training, test, labelCount):
+	(splitTraining, splitClusters) = akmp.multipleClusterPerLabe(training, labelCount, 3)
+	count = 0
+	print 'training: ' + str(len(splitTraining)) + ', clusters:' + str(len(splitClusters))
+	print splitTraining[0][0]
+	print splitTraining[0][0][0]
+	while(count < labelCount):
+		#akmp.clusterAnalysis(splitTraining[count], splitClusters[count], labelCount)
+		count += 1
+	
+	#clusters = akmp.kMeans(training, labelCount)
+	#clusters = akmp.clusterAnalysis(training, clusters, labelCount)
+	#akmp.clusterTest(clusters, test, labelCount)
+	
+trainingInfo = './dumps/five_labels/label_index_info_train.txt'
+testInfo = './dumps/five_labels/label_index_info_test.txt'
+labelInfo = './dumps/five_labels/indexLabelMapping.txt'
 
-trainingInfo = './dumps/five_labels_small/label_index_info_train.txt'
-testInfo = './dumps/five_labels_small/label_index_info_test.txt'
-labelInfo = './dumps/five_labels_small/indexLabelMapping.txt'
+trainingActivationVectorsFile = './trainingVectors.npy'
+testActivationVectorsFile = './testVectors.npy'
 
-trainingActivationVectorsFile = './trainingVectors.json'
-testActivationVectorsFile = './testVectors.json'
-
-batchSize = 100
+batchSize = 300
 batchLimit = 0
 
 labelCount = 5
@@ -110,16 +122,18 @@ else:
 	testJSONPath = sys.argv[2]
 	
 
-if trainingJSONPath.endswith('.json'):
-	(trainingActivationVectors) = anl.readVectorsFromJSON(trainingJSONPath)
+if trainingJSONPath.endswith('.npy'):
+	trainingActivationVectors = anl.readVectorsFromJSON(trainingJSONPath)
 else:
 	trainingActivationVectors = anl.readDumpInfo(trainingInfo, batchSize, batchLimit) 
 	anl.writeVectorsToJSON(trainingActivationVectors, trainingActivationVectorsFile)
 
-if testJSONPath.endswith('.json'):
+if testJSONPath.endswith('.npy'):
 	testActivationVectors = anl.readVectorsFromJSON(testJSONPath)
 else:
 	testActivationVectors = anl.readDumpInfo(testInfo, batchSize, batchLimit)
 	anl.writeVectorsToJSON(testActivationVectors, testActivationVectorsFile)
 
-#testKNN(trainingActivationVectors, testActivationVectors, labelCount)
+testKNN(trainingActivationVectors, testActivationVectors, labelCount)
+
+#testKMeans(trainingActivationVectors, testActivationVectors, labelCount)
