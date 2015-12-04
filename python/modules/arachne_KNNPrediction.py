@@ -1,19 +1,34 @@
 import numpy as np
 
+
 def nearestNeighbours(labeledVectors, newVectors):
 	results = []
-
+	batchSize = 1000
+	count = 0
 	for newVector in newVectors:
-		distances = []
+		distances = np.zeros([2,len(labeledVectors)])
+		batchCounter = 0
 
-		for labeledVector in labeledVectors:
-			difference = labeledVector[1:] - newVector[1:]
-			distances.append([int(labeledVector[0]), np.linalg.norm(difference)])
+		while batchCounter < len(labeledVectors):
+			currentBatch = labeledVectors[batchCounter:batchCounter+batchSize]
+			currentBatch = np.array(currentBatch)
 
-		distances = sorted(distances, key=lambda difference: difference[1])
+			currentDifferences = currentBatch[:,1:] - newVector[1:]
+			currentDistances = np.linalg.norm(currentDifferences, axis=1)
 
+			batchResult = np.vstack((currentBatch[:,0], currentDistances))
+			distances[:,batchCounter:batchCounter+batchSize] = batchResult
+			batchCounter += batchSize
+
+		distances = distances[:,np.argsort(distances[1])]
 		results.append({'labelId': int(newVector[0]), 'neighbours': distances})
 
+		count += 1
+
+		if count % 100 == 0:
+			print 'Calculated nearest neighbours for ' + str(count) + ' test vectors.'
+
+	print 'Calculated nearest neighbours for ' + str(count) + ' test vectors.'
 	return results
 
 def kNearestAnalysed(results, k, labelCount):
@@ -29,13 +44,9 @@ def kNearestAnalysed(results, k, labelCount):
 		currentDistribution = [0] * labelCount
 
 		count = 0
-		nNearest = []
-		while count < k:
-			nNearest.append(result['neighbours'][count])
-			count += 1
-
-		for neighbour in nNearest:
-			currentDistribution[neighbour[0]] += 1
+		kNearest = result['neighbours'][:,0:k]
+		for value in kNearest[0,:].tolist():
+			currentDistribution[int(value)] += 1
 
 		if np.argmax(currentDistribution) == result['labelId']:
 			correct += 1

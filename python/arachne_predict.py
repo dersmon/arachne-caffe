@@ -66,12 +66,13 @@ def testKNN(training, test, labelCount):
 
 	count = 0
 	data = []
-	while count < 100:
-		print 'Calculating prediction for ' + str(count + 1) + ' nearest neighbours.'
+	while count < len(training):
+		if((count + 1) % 100 == 0):
+			print 'Calculated prediction for ' + str(count + 1) + ' nearest neighbours.'
 		(correct, wrong, correctPerLabel, wrongPerLabel) = aknnp.kNearestAnalysed(testNeighbours, count + 1, labelCount)
 		data.append([count, float(correct)/(wrong + correct)])
 		count += 1
-
+	print 'Calculated prediction for ' + str(count + 1) + ' nearest neighbours.'
 	data = np.array(data)
 
 	plt.plot(data[:,0], data[:,1], 'k')
@@ -146,6 +147,6 @@ else:
 	testActivationVectors = anl.readDumpInfo(testInfo, batchSize, batchLimit)
 	anl.writeVectorsToJSON(testActivationVectors, testActivationVectorsFile)
 
-#testKNN(trainingActivationVectors, testActivationVectors, labelCount)
+testKNN(trainingActivationVectors, testActivationVectors, labelCount)
 
-testKMeans(trainingActivationVectors, testActivationVectors, labelCount)
+#testKMeans(trainingActivationVectors, testActivationVectors, labelCount)
