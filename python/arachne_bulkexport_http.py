@@ -1,8 +1,8 @@
+# -*- coding: UTF-8 -*-
 import sys
 import os
 import urllib2 as URL
 import json
-
 '''
 1) Definiere elastic-search Anfragen und zugehoerige Kategorien.
    1.1) Definition in externer Datei?
@@ -14,7 +14,9 @@ import json
 def sendQuery(url, asJson):
    global host
    try:
+      url = URL.quote(url.encode('utf8'), '/:"&=?')
       httpRequest = URL.urlopen(host + url)
+
       if asJson:
          return json.loads(httpRequest.read())
       else:
@@ -25,11 +27,12 @@ def sendQuery(url, asJson):
       return None
 
 def retreiveEntityIds(queries):
+   global limitEntityQuery
    print "Retreiving entity IDs."
    entityIds = []
 
    for query in queries:
-      response = sendQuery("/search?" + query['query'] + "&limit=10", True)
+      response = sendQuery("/search?" + query['query'] + "&limit=" + str(limitEntityQuery), True)
       for entity in response['entities']:
          entityIds.append([entity['entityId'], query['labels']])
 
@@ -49,7 +52,7 @@ def retreiveImageIds(entityIds):
 def createImageDictionary(imageIds):
    print "Filtering image IDs for dictionary."
    dictionary = dict()
-
+   labelMapping = []
    for image in imageIds:
       if image[0] in dictionary:
          labels = dictionary[image[0]]
@@ -63,9 +66,13 @@ def createImageDictionary(imageIds):
       else:
          dictionary[image[0]] = image[1]
 
-   return dictionary
+      for label in image[1]:
+         if label not in labelMapping:
+            labelMapping.append(label)
 
-def streamFiles(exportFolder, dictionary):
+   return [dictionary,labelMapping]
+
+def streamFiles(exportFolder, dictionary, labelMapping):
 
    nthAsTestImage = 5
    counter = 0
@@ -104,7 +111,7 @@ def streamFiles(exportFolder, dictionary):
 
       labelInfoString = targetPath
       for label in labels:
-         labelInfoString += " " + label
+         labelInfoString += " " + str(labelMapping.index(label))
       labelInfoString += "\n"
 
       with open(targetPath, "w+") as out:
@@ -122,7 +129,11 @@ def streamFiles(exportFolder, dictionary):
 
    print ("100 %\tdone.")
 
+# start global variables
 host = "http://arachne.dainst.org/data"
+limitEntityQuery = 1000
+# end
+
 configPath = sys.argv[1]
 configJSON = []
 
@@ -131,7 +142,7 @@ with open(configPath, "r") as configuration:
 
 entityIds = retreiveEntityIds(configJSON["queries"])
 imageIds = retreiveImageIds(entityIds)
-imageDictionary = createImageDictionary(imageIds)
 
-streamFiles("dumps/" + configJSON["exportName"], dictionary)
-#retreiveData(urlList)
+[imageDictionary, labelMapping] = createImageDictionary(imageIds)
+
+streamFiles("dumps/" + configJSON["exportName"], imageDictionary, labelMapping)
