@@ -22,21 +22,23 @@ def sendQuery(url, asJson):
       else:
          return httpRequest.read()
    except URL.HTTPError as e:
-      print("HTTPError for " + host + url)
-      print(e)
+      # print("HTTPError for " + host + url)
+      # print(e)
       return None
 
 def retreiveEntityIds(queries):
    global limitEntityQuery
    print "Retreiving entity IDs."
    entityIds = []
-
+   labelMapping = []
    for query in queries:
       response = sendQuery("/search?" + query['query'] + "&limit=" + str(limitEntityQuery), True)
       for entity in response['entities']:
          entityIds.append([entity['entityId'], query['labels']])
-
-   return entityIds
+      for label in query['labels']:
+         if label not in labelMapping:
+            labelMapping.append(label)
+   return [entityIds,labelMapping]
 
 def retreiveImageIds(entityIds):
    print "Retreiving image IDs."
@@ -52,7 +54,6 @@ def retreiveImageIds(entityIds):
 def createImageDictionary(imageIds):
    print "Filtering image IDs for dictionary."
    dictionary = dict()
-   labelMapping = []
    for image in imageIds:
       if image[0] in dictionary:
          labels = dictionary[image[0]]
@@ -61,16 +62,12 @@ def createImageDictionary(imageIds):
                #print "Found duplicate: " + str(image)
                continue
             else:
-               labels.append(image[1])
+               labels.append(label)
          dictionary[image[0]] = labels
       else:
          dictionary[image[0]] = image[1]
 
-      for label in image[1]:
-         if label not in labelMapping:
-            labelMapping.append(label)
-
-   return [dictionary,labelMapping]
+   return dictionary
 
 def streamFiles(exportFolder, dictionary, labelMapping):
 
@@ -78,44 +75,49 @@ def streamFiles(exportFolder, dictionary, labelMapping):
    counter = 0
    lastPercent = -1
 
-   deadlinkLog = exportFolder + "/invalid_imageIds.txt"
-   trainPath = exportFolder + "/train/"
-   testPath = exportFolder + "/test/"
+   invalidLogPath = exportFolder + "/invalid_imageIds.txt"
+   trainingFolderPath = exportFolder + "/train/"
+   testFolderPath = exportFolder + "/test/"
 
-   if not os.path.exists(os.path.dirname(trainPath)):
-      os.makedirs(os.path.dirname(trainPath))
+   if not os.path.exists(os.path.dirname(trainingFolderPath)):
+      os.makedirs(os.path.dirname(trainingFolderPath))
 
-   if not os.path.exists(os.path.dirname(testPath)):
-      os.makedirs(os.path.dirname(testPath))
+   if not os.path.exists(os.path.dirname(testFolderPath)):
+      os.makedirs(os.path.dirname(testFolderPath))
 
    print ("\nDownloading images, every "+ str(nthAsTestImage) + "th is beeing picked as a test image.")
 
-   for imageId, labels in dictionary.items():
-      image = sendQuery("/image/" + str(imageId), False)
+   trainingInfoPath = exportFolder + "/label_index_info_train.txt"
+   testInfoPath = exportFolder + "/label_index_info_test.txt"
 
-      if image == None:
-         with open(deadlinkLog, "a") as log:
+   for imageId, labels in dictionary.items():
+
+      imageData = sendQuery("/image/" + str(imageId), False)
+
+      if imageData == None:
+         with open(invalidLogPath, "a") as log:
             log.write(str(imageId)  + "\n")
          continue
 
       imageFileName =  str(imageId) + ".jpg"
       targetPath = ""
-      infoPath = ""
+      infoPath = None
 
       if counter % nthAsTestImage == 0:
-         targetPath = testPath + imageFileName
-         infoPath = exportFolder + "/label_index_info_test.txt"
+         targetPath = testFolderPath + imageFileName
+         infoPath = testInfoPath
       else:
-         targetPath = trainPath + imageFileName
-         infoPath = exportFolder + "/label_index_info_train.txt"
+         targetPath = trainingFolderPath + imageFileName
+         infoPath = trainingInfoPath
 
       labelInfoString = targetPath
+
       for label in labels:
          labelInfoString += " " + str(labelMapping.index(label))
       labelInfoString += "\n"
 
       with open(targetPath, "w+") as out:
-         out.write(image)
+         out.write(imageData)
 
       with open(infoPath, "a") as info:
          info.write(labelInfoString)
@@ -127,7 +129,7 @@ def streamFiles(exportFolder, dictionary, labelMapping):
          lastPercent = percent
          print (str(lastPercent) + "%\tdone.")
 
-   print ("100 %\tdone.")
+   print ("100%\tdone.")
 
 # start global variables
 host = "http://arachne.dainst.org/data"
@@ -140,9 +142,24 @@ configJSON = []
 with open(configPath, "r") as configuration:
    configJSON = json.load(configuration)
 
-entityIds = retreiveEntityIds(configJSON["queries"])
+targetPath = "dumps/" + configJSON["exportName"]
+
+[entityIds, labelMapping] = retreiveEntityIds(configJSON["queries"])
+
 imageIds = retreiveImageIds(entityIds)
 
-[imageDictionary, labelMapping] = createImageDictionary(imageIds)
+imageDictionary = createImageDictionary(imageIds)
+indexLabelMappingPath = targetPath + "/label_index_mapping.txt"
 
-streamFiles("dumps/" + configJSON["exportName"], imageDictionary, labelMapping)
+if not os.path.exists(os.path.dirname(indexLabelMappingPath)):
+   os.makedirs(os.path.dirname(indexLabelMappingPath))
+
+counter = 0
+for label in labelMapping:
+   with open(indexLabelMappingPath, "a") as output:
+      output.write(label + " " + str(counter) + "\n")
+      counter += 1
+
+streamFiles(targetPath, imageDictionary, labelMapping)
+
+print "Entities: " + str(len(entityIds)) + ", images:" + str(len(imageIds)) + ", image dictionary: " + str(len(imageDictionary))
