@@ -46,7 +46,7 @@ def readDumpInfo(path, batchSize, batchLimit):
 
 			split = line.strip().split(' ')
 
-			info = {'labelId':int(split[1]), 'path':split[0]}
+			info = {'path':split[0], 'labelId':split[1:]}
 
 			currentBatch.append(info)
 			currentBatchSize += 1
@@ -80,7 +80,7 @@ def evaluateImageBatch(net, transformer, imageBatch):
 
 	counter = 0
 	for image in imageBatch:
-		batchActivations.append(np.hstack((image.get('labelId'), out['fc7'][counter])))
+		batchActivations.append(np.hstack((out['fc7'][counter], image.get('labelId'))))
 		counter += 1
 
 	return batchActivations

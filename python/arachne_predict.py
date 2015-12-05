@@ -108,12 +108,12 @@ def testKMeans(training, test, labelCount):
 	#clusters = akmp.clusterAnalysis(training, clusters, labelCount)
 	akmp.clusterTest(clustersFlattened, test, labelCount)
 
-trainingInfo = './dumps/five_labels/label_index_info_train.txt'
-testInfo = './dumps/five_labels/label_index_info_test.txt'
-labelInfo = './dumps/five_labels/indexLabelMapping.txt'
+trainingInfo = './dumps/elastic_test_small/label_index_info_train.txt'
+testInfo = './dumps/elastic_test_small/label_index_info_test.txt'
+labelInfo = './dumps/elastic_test_small/label_index_mapping.txt'
 
-trainingActivationVectorsFile = './trainingVectors.npy'
-testActivationVectorsFile = './testVectors.npy'
+trainingActivationVectorsFile = './training_vectors_elastic_small.npy'
+testActivationVectorsFile = './test_vectors_elastic_small.npy'
 
 batchSize = 300
 batchLimit = 0
@@ -147,6 +147,8 @@ else:
 	testActivationVectors = anl.readDumpInfo(testInfo, batchSize, batchLimit)
 	anl.writeVectorsToJSON(testActivationVectors, testActivationVectorsFile)
 
-testKNN(trainingActivationVectors, testActivationVectors, labelCount)
+for vector in testActivationVectors:
+	print len(vector)
+#testKNN(trainingActivationVectors, testActivationVectors, labelCount)
 
 #testKMeans(trainingActivationVectors, testActivationVectors, labelCount)
