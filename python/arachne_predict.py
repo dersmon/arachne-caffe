@@ -44,8 +44,8 @@ def drawGrids(activations):
 '''
 
 def drawVectors(vectors):
-	labels = np.array(vectors)[:,0]
-	grid = np.array(vectors)[:,1:]
+	labels = np.array(vectors)[:,4096:]
+	grid = np.array(vectors)[:,0:4096]
 
 	maxValue = np.amax(grid)
 	minValue = np.amin(grid)
@@ -53,26 +53,40 @@ def drawVectors(vectors):
 	# print 'max activation: ' + str(maxValue) + ', min activation: ' + str(minValue)
 
 	scaled = grid * (255 / maxValue)
-
-	scaled = scaled.reshape(scaled.shape[0],4,1024)
-	scaled = scaled.mean(axis=1)
+	#
+	# scaled = scaled.reshape(scaled.shape[0],4,1024)
+	# scaled = scaled.mean(axis=1)
 
 	plt.imshow(scaled, 'Greys_r', interpolation='none')
 	plt.show()
 
 def testKNN(training, test, labelCount):
+	filePath = "./neighbours_doubletrain.npy"
+	# testNeighbours = aknnp.nearestNeighbours(training, test)
+	#
+	# print 'Writing file ' + filePath
+	# if not os.path.exists(os.path.dirname(filePath)):
+	# 	os.makedirs(os.path.dirname(filePath))
+	# with open(filePath, "w") as outputFile:
+	# 	np.save(outputFile, testNeighbours)
 
-	testNeighbours = aknnp.nearestNeighbours(training, test)
+	with open(filePath, 'r') as inputFile:
+		testNeighbours = np.load(inputFile)
 
 	count = 0
 	data = []
-	while count < len(training):
-		if((count + 1) % 100 == 0):
-			print 'Calculated prediction for ' + str(count + 1) + ' nearest neighbours.'
+	while count < 5 and count < len(training):
+
 		(correct, wrong, correctPerLabel, wrongPerLabel) = aknnp.kNearestAnalysed(testNeighbours, count + 1, labelCount)
+
 		data.append([count, float(correct)/(wrong + correct)])
 		count += 1
-	print 'Calculated prediction for ' + str(count + 1) + ' nearest neighbours.'
+		if((count + 1) % 100 == 0):
+			print 'Calculated prediction for ' + str(count + 1) + ' nearest neighbours.'
+
+		print str(correct) + ", " + str(wrong) + ", " + str(float(correct)/(wrong + correct))
+
+	print 'Calculated prediction for ' + str(count) + ' nearest neighbours.'
 	data = np.array(data)
 
 	plt.plot(data[:,0], data[:,1], 'k')
@@ -118,7 +132,7 @@ testActivationVectorsFile = './test_vectors_elastic_small.npy'
 batchSize = 300
 batchLimit = 0
 
-labelCount = 5
+labelCount = 18
 trainingActivationVectors = []
 testActivationVectors = []
 
@@ -135,20 +149,22 @@ if(len(sys.argv) < 3):
 else:
 	testJSONPath = sys.argv[2]
 
+
 if trainingJSONPath.endswith('.npy'):
 	trainingActivationVectors = anl.readVectorsFromJSON(trainingJSONPath)
 else:
-	trainingActivationVectors = anl.readDumpInfo(trainingInfo, batchSize, batchLimit)
+	trainingActivationVectors = anl.readDumpInfo(trainingInfo, batchSize, batchLimit, labelCount)
 	anl.writeVectorsToJSON(trainingActivationVectors, trainingActivationVectorsFile)
 
 if testJSONPath.endswith('.npy'):
 	testActivationVectors = anl.readVectorsFromJSON(testJSONPath)
 else:
-	testActivationVectors = anl.readDumpInfo(testInfo, batchSize, batchLimit)
+	testActivationVectors = anl.readDumpInfo(testInfo, batchSize, batchLimit, labelCount)
 	anl.writeVectorsToJSON(testActivationVectors, testActivationVectorsFile)
 
-for vector in testActivationVectors:
-	print len(vector)
-#testKNN(trainingActivationVectors, testActivationVectors, labelCount)
+#drawVectors(trainingActivationVectors)
+
+# testKNN(trainingActivationVectors, testActivationVectors, labelCount)
+testKNN(trainingActivationVectors, trainingActivationVectors, labelCount)
 
 #testKMeans(trainingActivationVectors, testActivationVectors, labelCount)

@@ -1,27 +1,47 @@
 import numpy as np
-
+from scipy import sparse
 
 def nearestNeighbours(labeledVectors, newVectors):
+
+	# print np.array(labeledVectors).shape
+	# print np.array(newVectors).shape
+
 	results = []
 	batchSize = 1000
 	count = 0
 	for newVector in newVectors:
-		distances = np.zeros([2,len(labeledVectors)])
+		distances = np.zeros((len(labeledVectors), (1 + newVector[4096:].size)))
 		batchCounter = 0
 
+		# print distances.shape
+
 		while batchCounter < len(labeledVectors):
-			currentBatch = labeledVectors[batchCounter:batchCounter+batchSize]
-			currentBatch = np.array(currentBatch)
+			# print "new batch"
+			currentBatch = np.array(labeledVectors[batchCounter:batchCounter+batchSize])
+			# print currentBatch.shape
 
-			currentDifferences = currentBatch[:,1:] - newVector[1:]
+			currentDifferences = currentBatch[:,0:4096] - newVector[0:4096]
+			# print currentDifferences.shape
+
 			currentDistances = np.linalg.norm(currentDifferences, axis=1)
+			# print currentDistances.shape
+			# print currentDistances.T.shape
 
-			batchResult = np.vstack((currentBatch[:,0], currentDistances))
-			distances[:,batchCounter:batchCounter+batchSize] = batchResult
+			labels =  currentBatch[:,4096:]
+			# print labels.shape
+
+
+			batchResult = np.vstack((currentDistances, labels.T))
+			# print batchResult.T.shape
+
+			distances[batchCounter:batchCounter+batchSize,:] = batchResult.T
 			batchCounter += batchSize
 
-		distances = distances[:,np.argsort(distances[1])]
-		results.append({'labelId': int(newVector[0]), 'neighbours': distances})
+		# print distances.shape
+		# print distances[:,0]
+		distances = distances[np.argsort(distances[:,0])]
+		# print distances[:,0]
+		results.append({'labelIds': np.array(newVector[4096:], dtype="int16"), 'neighbours': distances})
 
 		count += 1
 
@@ -33,6 +53,9 @@ def nearestNeighbours(labeledVectors, newVectors):
 
 def kNearestAnalysed(results, k, labelCount):
 
+	# print results.shape
+	# print results[0]['neighbours'].shape
+	# print results[0]['labelIds'].shape
 	correct = 0
 	wrong = 0
 
@@ -44,16 +67,45 @@ def kNearestAnalysed(results, k, labelCount):
 		currentDistribution = [0] * labelCount
 
 		count = 0
-		kNearest = result['neighbours'][:,0:k]
-		for value in kNearest[0,:].tolist():
-			currentDistribution[int(value)] += 1
+		kNearest = result['neighbours'][0:k]
 
-		if np.argmax(currentDistribution) == result['labelId']:
+		# print kNearest.shape
+		# print kNearest[:,1:].shape
+
+		currentDistribution = np.array(kNearest[:,1:], dtype="int16")
+
+		# print currentDistribution.shape
+		# print currentDistribution
+		# print result['labelIds']
+		correctLabels = (result['labelIds'] == currentDistribution)
+
+		correctLabelsCount = np.count_nonzero(result['labelIds'])
+		predictedWrong = np.count_nonzero((False == correctLabels))
+
+		# print "For k = " + str(k) + ":"
+		# print kNearest.shape
+		# print "test labels:"
+		# print result['labelIds'].shape
+		# print result['labelIds']
+		# print "k label groups:"
+		# print currentDistribution.shape
+		# print currentDistribution
+		# print currentDistribution.T.shape
+		# print currentDistribution.T
+		# print "correct labels:"
+		# print correctLabels
+		# print correctLabels.shape
+		# print correctLabelsCount
+		# print predictedWrong
+
+		if (correctLabelsCount * k) - predictedWrong > 0:
+			#print "Correct."
 			correct += 1
-			correctDistribution[result['labelId']] += 1
+			# correctDistribution[result['labelIds']] += 1
 		else:
+			#print "Wrong."
 			wrong += 1
-			wrongDistribution[result['labelId']] += 1
+			# wrongDistribution[result['labelIds']] += 1
 
 	#print 'correct: ' + str(correct) + ', wrong: ' + str(wrong) + ', ratio: ' + str(float(correct)/(wrong + correct))
 	#print 'correct per label: ' + str(correctDistribution)

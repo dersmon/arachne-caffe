@@ -28,7 +28,7 @@ def getNetAndTransformer():
 
 	return (net, transformer)
 
-def readDumpInfo(path, batchSize, batchLimit):
+def readDumpInfo(path, batchSize, batchLimit, labelCount):
 
 	imageBatchCount = 0
 	imageCount = 0
@@ -52,7 +52,7 @@ def readDumpInfo(path, batchSize, batchLimit):
 			currentBatchSize += 1
 
 			if currentBatchSize == batchSize:
-				activationVectors.extend(evaluateImageBatch(net, transformer, currentBatch))
+				activationVectors.extend(evaluateImageBatch(net, transformer, currentBatch, labelCount))
 
 				currentBatchSize = 0
 				currentBatch = []
@@ -63,12 +63,12 @@ def readDumpInfo(path, batchSize, batchLimit):
 				if batchCount == batchLimit and batchLimit != 0:
 					break;
 
-	activationVectors.extend(evaluateImageBatch(net, transformer, currentBatch))
+	activationVectors.extend(evaluateImageBatch(net, transformer, currentBatch, labelCount))
 	print 'Final number of images processed: ' + str(len(activationVectors))
 	return activationVectors
 
 
-def evaluateImageBatch(net, transformer, imageBatch):
+def evaluateImageBatch(net, transformer, imageBatch, labelCount):
 
 	batchActivations = []
 	imageData = map(lambda x: transformer.preprocess('data',caffe.io.load_image(x.get('path'))) , imageBatch)
@@ -80,7 +80,9 @@ def evaluateImageBatch(net, transformer, imageBatch):
 
 	counter = 0
 	for image in imageBatch:
-		batchActivations.append(np.hstack((out['fc7'][counter], image.get('labelId'))))
+		labelActivation = np.array([0] * labelCount)
+		labelActivation[np.array(image.get('labelId'), dtype=np.uint8)] += 1
+		batchActivations.append(np.hstack((out['fc7'][counter], labelActivation)))
 		counter += 1
 
 	return batchActivations
