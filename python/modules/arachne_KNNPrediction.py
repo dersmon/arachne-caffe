@@ -73,31 +73,19 @@ def kNearestAnalysed(results, k, labelCount):
 		# print kNearest[:,1:].shape
 
 		currentDistribution = np.array(kNearest[:,1:], dtype="int16")
-
-		# print currentDistribution.shape
-		# print currentDistribution
-		# print result['labelIds']
 		correctLabels = (result['labelIds'] == currentDistribution)
 
-		correctLabelsCount = np.count_nonzero(result['labelIds'])
-		predictedWrong = np.count_nonzero((False == correctLabels))
-
-		# print "For k = " + str(k) + ":"
-		# print kNearest.shape
-		# print "test labels:"
-		# print result['labelIds'].shape
-		# print result['labelIds']
-		# print "k label groups:"
 		# print currentDistribution.shape
 		# print currentDistribution
-		# print currentDistribution.T.shape
-		# print currentDistribution.T
-		# print "correct labels:"
-		# print correctLabels
+		# print result['labelIds'].shape
+		# print result['labelIds']
 		# print correctLabels.shape
-		# print correctLabelsCount
-		# print predictedWrong
+		# print correctLabels
 
+		correctLabelsCount = np.count_nonzero(result['labelIds'])
+
+		predictedWrong = np.count_nonzero((False == correctLabels))
+		
 		if (correctLabelsCount * k) - predictedWrong > 0:
 			#print "Correct."
 			correct += 1
