@@ -61,21 +61,21 @@ def drawVectors(vectors):
 	plt.show()
 
 def testKNN(training, test, labelCount):
-	filePath = "./neighbours_doubletrain.npy"
-	# testNeighbours = aknnp.nearestNeighbours(training, test)
-	#
-	# print 'Writing file ' + filePath
-	# if not os.path.exists(os.path.dirname(filePath)):
-	# 	os.makedirs(os.path.dirname(filePath))
-	# with open(filePath, "w") as outputFile:
-	# 	np.save(outputFile, testNeighbours)
+	filePath = "./neighbours_elastic.npy"
+	testNeighbours = aknnp.nearestNeighbours(training, test, 50)
 
-	with open(filePath, 'r') as inputFile:
-		testNeighbours = np.load(inputFile)
+	print 'Writing file ' + filePath
+	if not os.path.exists(os.path.dirname(filePath)):
+		os.makedirs(os.path.dirname(filePath))
+	with open(filePath, "w") as outputFile:
+		np.save(outputFile, testNeighbours)
+
+	# with open(filePath, 'r') as inputFile:
+	# 	testNeighbours = np.load(inputFile)
 
 	count = 0
 	data = []
-	while count < 5 and count < len(training):
+	while count < 50 and count < len(training):
 
 		(correct, wrong, correctPerLabel, wrongPerLabel) = aknnp.kNearestAnalysed(testNeighbours, count + 1, labelCount)
 
@@ -90,46 +90,31 @@ def testKNN(training, test, labelCount):
 	data = np.array(data)
 
 	plt.plot(data[:,0], data[:,1], 'k')
-	plt.axis([1, len(data) - 1, 0, 1])
+	plt.axis([1, len(data), 0, 1])
 	plt.grid(True)
 	plt.show()
 
 def testKMeans(training, test, labelCount):
-	(splitTraining, splitClusters) = akmp.multipleClustersPerLabel(training, labelCount, 10)
-	count = 0
+	clusters = akmp.multipleLabelsPerImage(training, labelCount, 500)
 
-	# print np.array(splitTraining[0]).shape
-	# print np.array(splitTraining[1]).shape
-	# print np.array(splitTraining[2]).shape
-	# print np.array(splitTraining[3]).shape
-	# print np.array(splitTraining[4]).shape
-	# print np.array(splitClusters).shape
+	filePath = "./clusters_small.npy"
 
-	# print 'training: ' + str(len(splitTraining)) + ', clusters:' + str(len(splitClusters))
-	# print splitTraining[0][:][0]
-	# print splitTraining[0][0][0]
+	print 'Writing file ' + filePath
+	if not os.path.exists(os.path.dirname(filePath)):
+		os.makedirs(os.path.dirname(filePath))
+	with open(filePath, "w") as outputFile:
+		np.save(outputFile, clusters)
 
-	clustersFlattened = []
+	clusters = akmp.clusterAnalysisMultipleLabels(clusters, training)
 
-	while(count < labelCount):
-		clustersFlattened.extend(akmp.clusterAnalysis(splitTraining[count], splitClusters[count], labelCount))
-		count += 1
+trainingInfo = './dumps/elastic_test/label_index_info_train.txt'
+testInfo = './dumps/elastic_test/label_index_info_test.txt'
+labelInfo = './dumps/elastic_test/label_index_mapping.txt'
 
-	# print len(clustersFlattened)
-	# print len(clustersFlattened[0])
-	# print clustersFlattened[0]
-	#clusters = akmp.kMeans(training, labelCount)
-	#clusters = akmp.clusterAnalysis(training, clusters, labelCount)
-	akmp.clusterTest(clustersFlattened, test, labelCount)
+trainingActivationVectorsFile = './training_vectors_elastic.npy'
+testActivationVectorsFile = './test_vectors_elastic.npy'
 
-trainingInfo = './dumps/elastic_test_small/label_index_info_train.txt'
-testInfo = './dumps/elastic_test_small/label_index_info_test.txt'
-labelInfo = './dumps/elastic_test_small/label_index_mapping.txt'
-
-trainingActivationVectorsFile = './training_vectors_elastic_small.npy'
-testActivationVectorsFile = './test_vectors_elastic_small.npy'
-
-batchSize = 300
+batchSize = 100
 batchLimit = 0
 
 labelCount = 18
@@ -164,7 +149,6 @@ else:
 
 #drawVectors(trainingActivationVectors)
 
-# testKNN(trainingActivationVectors, testActivationVectors, labelCount)
-testKNN(trainingActivationVectors, trainingActivationVectors, labelCount)
+testKNN(trainingActivationVectors, testActivationVectors, labelCount)
 
-#testKMeans(trainingActivationVectors, testActivationVectors, labelCount)
+# testKMeans(trainingActivationVectors, testActivationVectors, labelCount)

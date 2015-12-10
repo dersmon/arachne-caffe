@@ -42,7 +42,6 @@ def kMeansIteration(centers, activations):
 
 		count += 1
 
-
 	# Adjust centers towards mean of assigned vectors
 
 	for center in tempCenters:
@@ -149,3 +148,80 @@ def multipleClustersPerLabel(activationVectors, labelNumber, clusterCount):
 		labelCounter += 1
 
 	return [splitActivations, splitCenters]
+
+def multipleLabelsPerImage(activations, clusterCount, iterations):
+	clusters = []
+
+	counter = 0
+	while counter < clusterCount:
+		clusters.append({'position':random.choice(activations)[0:4096], 'clusterMembers':[]})
+		counter += 1
+
+	counter = 0
+	while counter < iterations:
+		clusters = kMeansIterationMultipleLabels(clusters, activations)
+		counter += 1
+
+	return clusters
+
+def kMeansIterationMultipleLabels(clusters, activations):
+
+	tempClusters = []
+	updatedClusters = []
+
+	for cluster in clusters:
+		tempClusters.append({'position':cluster.get('position'), 'clusterMembers': []})
+
+	count = 0
+	for activation in activations:
+		distances = []
+		# Calculate distance to centers
+		for cluster in clusters:
+			difference = cluster['position'] - activation[0:4096]
+			distances.append(np.linalg.norm(difference))
+
+		# Assign to closest center
+		members = tempClusters[np.argmin(distances)].get('clusterMembers')
+		members.append(count)
+		tempClusters[np.argmin(distances)]['clusterMembers'] = members
+
+		count += 1
+
+	# Adjust centers towards mean of assigned vectors
+
+	for cluster in tempClusters:
+		#print "Assigned points: " + str(center['clusterMembers'])
+		points = [activations[i][0:4096] for i in cluster['clusterMembers']]
+
+		updatedPosition = np.sum(points, axis=0)
+		if len(cluster['clusterMembers']) != 0:
+			updatedPosition /= len(cluster['clusterMembers'])
+
+		#print 'old position: ' + str(center['position']) + ', length: ' + str(len(center['position']))
+		#print 'new position: ' + str(updatedPosition) + ', length: ' + str(updatedPosition.shape[0])
+
+		updatedClusters.append({'position':updatedPosition, 'clusterMembers': cluster['clusterMembers']})
+
+	return updatedClusters
+
+def clusterAnalysisMultipleLabels(clusters, training):
+
+	analysedCluster = []
+	counter = 0
+	for cluster in clusters:
+		print 'Cluster ' + str(counter) + ', labels:'
+		labels = [np.array(training[i,4096:], dtype='int16') for i in cluster['clusterMembers']]
+
+		labelDistribution = [0] * len(labels[0])
+
+		for label in labels:
+			labelDistribution += label
+
+		print str(labelDistribution)
+
+		maxLabelId = np.argmax(labelDistribution)
+
+		analysedCluster.append({'position': cluster['position'], 'maxLabelID': maxLabelId, 'memberLabelIDs': labels, 'labelDistribution': labelDistribution})
+		counter += 1
+
+	return analysedCluster
