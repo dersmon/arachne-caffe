@@ -3,13 +3,6 @@ import sys
 import os
 import urllib2 as URL
 import json
-'''
-1) Definiere elastic-search Anfragen und zugehoerige Kategorien.
-   1.1) Definition in externer Datei?
-   1.2) HTTP Basic Authentifizierung?
-2) Sammle sich daraus ergebende Bilder.
-3) Erstelle "Woerterbuch" aus Bildern, falls Bild schon vorhanden: mehrere Kategorien.
-'''
 
 def sendQuery(url, asJson):
    global host
@@ -75,7 +68,7 @@ def streamFiles(exportFolder, dictionary, labelMapping):
    counter = 0
    lastPercent = -1
 
-   invalidLogPath = exportFolder + "/invalid_imageIds.txt"
+   invalidLogPath = exportFolder + "/invalid_image_ids.txt"
    trainingFolderPath = exportFolder + "/train/"
    testFolderPath = exportFolder + "/test/"
 
@@ -162,4 +155,4 @@ for label in labelMapping:
 
 streamFiles(targetPath, imageDictionary, labelMapping)
 
-print "Entities: " + str(len(entityIds)) + ", images:" + str(len(imageIds)) + ", image dictionary: " + str(len(imageDictionary))
+print "Number of entities: " + str(len(entityIds)) + ", images:" + str(len(imageIds)) + ", image dictionary items: " + str(len(imageDictionary))
