@@ -16,10 +16,9 @@ def getKNearestNeighbours(training, test, k):
 
 	print "Searching " + str(k) + " nearest neighbours. Batch size is " + str(batchSize) + "."
 	previous = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-
 	count = 0
 	for currentTestVector in test:
-		distances = np.empty((len(training), (1 + currentTestVector[4096:].size)), dtype='float16')
+		distances = np.empty((len(training), (1 + (training[0][4096:]).size)), dtype='float16')
 		batchCounter = 0
 
 		print ('1) Memory usage: %s (kb)' % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss - previous))
