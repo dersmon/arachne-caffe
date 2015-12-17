@@ -82,10 +82,14 @@ def evaluateImageBatch(net, transformer, imageBatch, labelCount):
 
 	counter = 0
 	for image in imageBatch:
-		labelFlags = np.array([0] * labelCount)
-		labelFlags[np.array(image.get('labelIds'), dtype=np.uint8)] += 1
+		if labelCount != 0:
+			labelFlags = np.array([0] * labelCount)
+			labelFlags[np.array(image.get('labelIds'), dtype=np.uint8)] += 1
 
-		batchActivations.append(np.hstack((out['fc7'][counter], labelFlags)))
+			batchActivations.append(np.hstack((out['fc7'][counter], labelFlags)))
+		else:
+			batchActivations.append(out['fc7'][counter])
+
 		counter += 1
 
 	return batchActivations
