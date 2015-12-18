@@ -81,7 +81,7 @@ def retreiveLinkedEntities(imageIds):
             if entity['entityId'] in knownEntities:
                continue
             else:
-               entityIds.append(entity["entityId"],image[1])
+               entityIds.append([entity["entityId"],image[1]])
                knownEntities.append(entity['entityId'])
 
    return entityIds
@@ -203,12 +203,18 @@ entityIds = retreiveEntitiesByQuery(configJSON["queries"])
 imageIds = []
 iteration = 0
 while iteration < 5:
-   print "iteration " + str(iteration) + ", input entities: " + str(len(entityIds)) + ", images: " + str(len(imageIds))
-   imageIds = retreiveEntitiesIds(entityIds)
-   entityIds = retreiveLinkedEntities(imageIds)
+   currentImages = retreiveEntitiesIds(entityIds)
+   print "iteration " + str(iteration) + ", input entities: " + str(len(entityIds)) + ", images: " + str(len(currentImages))
+   entityIds = retreiveLinkedEntities(currentImages)
    iteration += 1
+   imageIds += currentImages
+
+for image in imageIds:
+   with open("./images.tsv", "a") as output:
+      output.write("http://arachne.dainst.org/entity/" + str(image[0]) + "\t" + str(image[1])  + "\n")
 
 imageDictionary = createImageDictionary(imageIds)
+
 indexLabelMappingPath = targetPath + "/label_index_mapping.txt"
 
 if not os.path.exists(os.path.dirname(indexLabelMappingPath)):
