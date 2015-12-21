@@ -4,14 +4,6 @@ import os
 import urllib2 as URL
 import json
 
-# mache erste Suchanfragen
-# 00 Bis Tiefe gleich N
-#  01 sammle Entities aus Definition & lese Felder, speichere
-#   02 sammle Bilder
-#    03 speichere pro Bild ID & label
-#    04 mache pro Bild eine linked-entity-suche
-#  05 springe zu 01
-
 def sendQuery(url, asJson):
    global host
    try:
@@ -138,7 +130,6 @@ def streamFiles(exportFolder, dictionary, labelMapping):
    testInfoPath = exportFolder + "/label_index_info_test.txt"
 
    for imageId, labels in dictionary.items():
-
       imageData = sendQuery("/image/" + str(imageId), False)
 
       if imageData == None:
@@ -180,7 +171,7 @@ def streamFiles(exportFolder, dictionary, labelMapping):
 
 # start global variables
 host = "http://bogusman01.dai-cloud.uni-koeln.de/data"
-limitEntityQuery = 10000
+limitEntityQuery = 10
 facetList = ["facet_kategorie", "facet_material", "facet_objektgattung", "facet_technik", "facet_technik", "facet_kulturkreis", "facet_subkategorie_objekt", "title"]
 labelConfigPath = "./examples/dump_configs/elastic/labels.txt"
 labelMapping = []
@@ -197,10 +188,10 @@ with open(labelConfigPath, "r") as labelConfig:
    for line in labelConfig.readlines():
       labelMapping.append(line.strip().lower().decode('utf8'))
 
-
 targetPath = "dumps/" + configJSON["exportName"]
 entityIds = retreiveEntitiesByQuery(configJSON["queries"])
 imageIds = []
+
 iteration = 0
 while iteration < 5:
    currentImages = retreiveEntitiesIds(entityIds)
@@ -211,7 +202,7 @@ while iteration < 5:
 
 for image in imageIds:
    with open("./images.tsv", "a") as output:
-      output.write("http://arachne.dainst.org/entity/" + str(image[0]) + "\t" + str(image[1])  + "\n")
+      output.write(str(image[0]) + "\t" + str(image[1])  + "\n")
 
 imageDictionary = createImageDictionary(imageIds)
 
