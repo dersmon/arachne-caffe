@@ -12,8 +12,9 @@ if(len(sys.argv) < 3):
 dumpRootPath = sys.argv[1]
 logPath = sys.argv[2]
 
-labelCardinality = 0 # Label cardinality is the average number of labels per example in the set
-labelDensity = 0 # label density is the number of labels per sample divided by the total number of labels, averaged over the samples
+# see https://en.wikipedia.org/wiki/Multi-label_classification#Statistics_and_evaluation_metrics
+labelCardinality = 0
+labelDensity = 0
 
 def getCardinality(infoPath, labelCount):
    labelSum = 0
