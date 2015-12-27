@@ -171,7 +171,7 @@ def streamFiles(exportFolder, dictionary, labelMapping):
 
 # start global variables
 host = "http://bogusman01.dai-cloud.uni-koeln.de/data"
-limitEntityQuery = 10
+limitEntityQuery = 10000
 facetList = ["facet_kategorie", "facet_material", "facet_objektgattung", "facet_technik", "facet_technik", "facet_kulturkreis", "facet_subkategorie_objekt", "title"]
 labelConfigPath = "./examples/dump_configs/elastic/labels.txt"
 labelMapping = []
@@ -186,7 +186,8 @@ with open(configPath, "r") as configuration:
 
 with open(labelConfigPath, "r") as labelConfig:
    for line in labelConfig.readlines():
-      labelMapping.append(line.strip().lower().decode('utf8'))
+      if(line.strip().lower().decode('utf8') not in labelMapping):
+         labelMapping.append(line.strip().lower().decode('utf8'))
 
 targetPath = "dumps/" + configJSON["exportName"]
 entityIds = retreiveEntitiesByQuery(configJSON["queries"])
@@ -200,11 +201,11 @@ while iteration < 5:
    iteration += 1
    imageIds += currentImages
 
-for image in imageIds:
-   with open("./images.tsv", "a") as output:
-      output.write(str(image[0]) + "\t" + str(image[1])  + "\n")
-
 imageDictionary = createImageDictionary(imageIds)
+
+for image in imageIds:
+   with open("./dumps/" + configJSON["exportName"] + "/image_dictionary.tsv", "a") as output:
+      output.write(str(image[0]) + "\t" + str(image[1])  + "\n")
 
 indexLabelMappingPath = targetPath + "/label_index_mapping.txt"
 
