@@ -31,5 +31,5 @@ with open(labelIndexMappingPath, 'r') as labelMappingFile:
    for line in labelMappingFile:
       labelCount += 1
 
-ac.activationsToFile(ac.crunchDumpFiles(trainingDataInfoPath, batchSize, batchLimit, labelCount), trainingActivationsPath)
-ac.activationsToFile(ac.crunchDumpFiles(testDataInfoPath, batchSize, batchLimit, labelCount), testActivationsPath)
+ac.activationsToFile(ac.crunchDumpFiles(trainingDataInfoPath, batchSize, batchLimit, labelCount),  "numpy_vectors/" + trainingActivationsPath)
+ac.activationsToFile(ac.crunchDumpFiles(testDataInfoPath, batchSize, batchLimit, labelCount), "numpy_vectors/" + testActivationsPath)
