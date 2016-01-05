@@ -1,0 +1,62 @@
+{
+  "exportName": "elastic_single",
+  "queries":
+  [
+    {
+      "query": "fq=facet_image:\"ja\"&q=personengruppe",
+      "label": "person"
+    },
+    {
+      "query": "fq=facet_image:\"ja\"&fq=facet_kategorie:\"Einzelobjekte\"&q=einzelperson",
+      "label": "person"
+    },
+    {
+      "query": "fq=facet_image:\"ja\"&fq=facet_kategorie:\"Topographien\"&q=landschaft",
+      "label": "topographie"
+    },
+    {
+      "query": "fq=facet_image:\"ja\"&fq=facet_kategorie:\"Einzelobjekte\"&q=sarkophag",
+      "label": "sarkophag"
+    },
+    {
+      "query": "fq=facet_image:\"ja\"&fq=facet_kategorie:\"Einzelobjekte\"&q=keramik",
+      "label": "keramik"
+    },
+    {
+      "query": "fq=facet_image:\"ja\"&fq=facet_kategorie:\"Einzelobjekte\"&q=statue",
+      "label": "statue"
+    },
+    {
+      "query": "fq=facet_image:\"ja\"&fq=facet_kategorie:\"Bilder\"&q=statue",
+      "label": "statue"
+    },
+    {
+      "query": "fq=facet_image:\"ja\"&fq=facet_kategorie:\"Reproduktionen\"&q=statue",
+      "label": "statue"
+    },
+    {
+      "query": "fq=facet_image:\"ja\"&fq=facet_kategorie:\"Buchseiten\"&q=*",
+      "label": "buchseite"
+    },
+    {
+      "query": "fq=facet_image:\"ja\"&fq=facet_kategorie:\"Bauwerke\"&q=*",
+      "label": "bauwerk"
+    },
+    {
+      "query":"fq=facet_image:\"ja\"&fq=facet_kategorie:\"Bauwerksteile\"&q=*",
+      "label": "bauwerk"
+    },
+    {
+      "query":"fq=facet_image:\"ja\"&fq=facet_kategorie:\"Einzelobjekte\"&q=säule",
+      "label":"saeule"
+    },
+    {
+      "query":"fq=facet_image:\"ja\"&fq=facet_kategorie:\"Einzelobjekte\"&q=relief",
+      "label":"relief"
+    },
+    {
+      "query":"fq=facet_image:\"ja\"&fq=facet_kategorie:\"Szenen\"&q=relief",
+      "label":"relief"
+    }
+  ]
+}
