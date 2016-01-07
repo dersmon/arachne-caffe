@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import sys
 import logging
 import os
@@ -6,18 +8,89 @@ import json
 import elastic_query
 import download_statistics
 
-limitEntityQuery = 100
-limitImagePerEntity = 3
+
+
+limitEntityQuery = 150
+imagePerEntity = 50
 labelMapping = []
 targetPath = './image_dumps/'
 harvestingTest = True
+labelDistributionAdjusted = []
+adjustmentFactor = 1
 
-# logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-def retreiveEntityIds(queries):
+def startBulkDownload(targetPath, configJSON, showStatisticsPlot):
+
+   global labelDistributionAdjusted
+   global labelMapping
+
+   logger.info('Target path for image dump: ' + os.path.abspath(targetPath) + '.')
+
+   labelMapping = []
+   [entityIds, labelMapping] = retreiveEntityIds(configJSON['queries'], False)
+
+   labelDistributionAdjusted = [1] * len(labelMapping)
+   logger.debug(labelDistributionAdjusted)
+   logger.info('Found ' + str(len(entityIds)) + ' entities with ' + str(len(labelMapping)) + ' labels.')
+   imageIds = retreiveImageIds(entityIds)
+
+   imageDictionary = createImageDictionary(imageIds)
+
+   labelHistogram = [0] * len(labelMapping)
+   labelSum = 0
+   for key, value in imageDictionary.items():
+      labelHistogram[labelMapping.index(value)] += 1
+      labelSum += 1
+
+   labelDistributionAdjusted = [(float(labelSum) / x) * adjustmentFactor for x in labelHistogram]
+
+   logger.info("Label distribution:")
+   logger.info(labelHistogram)
+   logger.info(labelMapping)
+   logger.info(labelDistributionAdjusted)
+
+   logger.info('Original images: ' + str(len(imageIds)) + ', filtered: ' + str(len(imageDictionary)) + '.')
+
+   [entityIds, labelMapping] = retreiveEntityIds(configJSON['queries'], True)
+   imageIds = retreiveImageIds(entityIds)
+   imageDictionary = createImageDictionary(imageIds)
+
+   labelHistogram = []
+
+   labelHistogram = [0] * len(labelMapping)
+   labelSum = 0
+   for key, value in imageDictionary.items():
+      labelHistogram[labelMapping.index(value)] += 1
+      labelSum += 1
+
+   labelDistributionAdjusted = [(float(labelSum) / x) * adjustmentFactor for x in labelHistogram]
+
+   logger.info("Label distribution:")
+   logger.info(labelHistogram)
+   logger.info(labelMapping)
+   logger.info(labelDistributionAdjusted)
+
+   logger.info('Original images: ' + str(len(imageIds)) + ', filtered: ' + str(len(imageDictionary)) + '.')
+
+   logger.info('Writing label index mapping...')
+
+   indexLabelMappingPath = targetPath + '/label_index_mapping.txt'
+   if not os.path.exists(os.path.dirname(indexLabelMappingPath)):
+      os.makedirs(os.path.dirname(indexLabelMappingPath))
+
+   with open(indexLabelMappingPath, 'a') as output:
+      for index, value in enumerate(labelMapping):
+         output.write(value + ' ' + str(index) + '\n')
+
+
+   streamFiles(targetPath, imageDictionary, labelMapping)
+
+   download_statistics.evaluate( targetPath + '/', targetPath + '/' + 'labelinfo.log', targetPath + '/distribution_' + '.pdf' ,  showStatisticsPlot)
+
+def retreiveEntityIds(queries, limitByDistribution):
    logger.info('Retreiving entity IDs...')
    global limitEntityQuery
    global labelMapping
@@ -31,7 +104,13 @@ def retreiveEntityIds(queries):
       if label not in labelMapping:
          labelMapping.append(label)
 
-      response = elastic_query.sendQuery('/search?' + query['query'] + '&limit=' + str(limitEntityQuery), True)
+      limit = None
+      if limitByDistribution:
+         limit = int(limitEntityQuery * labelDistributionAdjusted[labelMapping.index(label)])
+      else:
+         limit = limitEntityQuery
+
+      response = elastic_query.sendQuery('/search?' + query['query'] + '&limit=' + str(limit), True)
       for entity in response['entities']:
          logger.debug('Received entity ' + str(entity['entityId']) + ', label: ' + label + '.')
          entityIds.append([entity['entityId'], label])
@@ -39,14 +118,16 @@ def retreiveEntityIds(queries):
    return [entityIds,labelMapping]
 
 def retreiveImageIds(entityIds):
+
    logger.info('Retreiving image IDs linked to entities...')
    imageIds = []
+   global labelDistributionAdjusted
 
    for entity in entityIds:
       response = elastic_query.sendQuery('/entity/' + str(entity[0]), True)
       counter = 0
       for image in response['images']:
-         if limitImagePerEntity != 0 and counter < limitImagePerEntity:
+         if imagePerEntity != 0 and counter < imagePerEntity:
             logger.debug('Received image ' + str(image['imageId']) + ', label: ' + str(entity[1]) + '.')
             imageIds.append([image['imageId'], entity[1]])
             counter += 1
@@ -60,20 +141,15 @@ def createImageDictionary(imageIds):
    dictionary = dict()
    for image in imageIds:
       if image[0] in dictionary:
-         labels = dictionary[image[0]]
-         for label in image[1]:
-            if label in labels:
-               logger.debug('Found duplicate: ' + str(image))
-               continue
-            else:
-               labels.append(label)
-         dictionary[image[0]] = labels
+         continue
       else:
          dictionary[image[0]] = image[1]
 
    return dictionary
 
 def streamFiles(exportFolder, dictionary, labelMapping):
+
+   logger.info('Downloading image files...')
 
    nthAsTestImage = 5
    counter = 0
@@ -91,7 +167,7 @@ def streamFiles(exportFolder, dictionary, labelMapping):
    if not os.path.exists(os.path.dirname(testFolderPath)):
       os.makedirs(os.path.dirname(testFolderPath))
 
-   if  harvestingTest == False:
+   if  harvestingTest== False:
       logger.info('\nDownloading images, every '+ str(nthAsTestImage) + 'th is beeing picked as a test image.')
    else:
       logger.info('\nSkipping image downloads. Just writing index info files.')
@@ -101,7 +177,7 @@ def streamFiles(exportFolder, dictionary, labelMapping):
 
    for imageId, label in dictionary.items():
 
-      if harvestingTest == False:
+      if harvestingTest== False:
          imageData = elastic_query.sendQuery('/image/' + str(imageId), False)
 
          if imageData == None:
@@ -122,7 +198,7 @@ def streamFiles(exportFolder, dictionary, labelMapping):
 
       labelInfoString = targetPath + ' ' + str(labelMapping.index(label)) + '\n'
 
-      if harvestingTest == False:
+      if harvestingTest== False:
          with open(targetPath, 'w+') as out:
             out.write(imageData)
 
@@ -134,12 +210,10 @@ def streamFiles(exportFolder, dictionary, labelMapping):
 
       if percent - lastPercent > 0:
          lastPercent = percent
-         logger.info(str(lastPercent) + '%\tdone.')
 
-   logger.info('100%\tdone.')
+   logger.info('\nDone.')
 
 if __name__ == '__main__':
-
    logger.info('Running harvesting test (just collecting metadata, skipping image download): ' + str(harvestingTest))
    configPath = sys.argv[1]
    configJSON = []
@@ -148,27 +222,4 @@ if __name__ == '__main__':
       configJSON = json.load(configuration)
 
    targetPath += configJSON['exportName'] + '_' + str(limitEntityQuery)
-
-   logger.info('Target path for image dump: ' + os.path.abspath(targetPath) + '.')
-
-   [entityIds, labelMapping] = retreiveEntityIds(configJSON['queries'])
-
-   logger.info('Found ' + str(len(entityIds)) + ' entities with ' + str(len(labelMapping)) + ' labels.')
-   imageIds = retreiveImageIds(entityIds)
-
-   imageDictionary = createImageDictionary(imageIds)
-   logger.info('Original images: ' + str(len(imageIds)) + ', filtered: ' + str(len(imageDictionary)) + '.')
-   logger.info('Writing label index mapping...')
-
-   indexLabelMappingPath = targetPath + '/label_index_mapping.txt'
-   if not os.path.exists(os.path.dirname(indexLabelMappingPath)):
-      os.makedirs(os.path.dirname(indexLabelMappingPath))
-
-   with open(indexLabelMappingPath, 'a') as output:
-      for index, value in enumerate(labelMapping):
-         output.write(value + ' ' + str(index) + '\n')
-
-   logger.info('Downloading image files...')
-   streamFiles(targetPath, imageDictionary, labelMapping)
-
-   download_statistics.evaluate(targetPath + '/', targetPath + '/' + 'labelinfo.log', True)
+   startBulkDownload(targetPath, configJSON, True)

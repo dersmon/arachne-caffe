@@ -2,6 +2,10 @@ import logging
 import urllib2 as URL
 import json
 
+logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
 host = 'http://bogusman01.dai-cloud.uni-koeln.de/data'
 
 def sendQuery(url, asJson):
@@ -16,6 +20,6 @@ def sendQuery(url, asJson):
          return httpRequest.read()
 
    except URL.HTTPError as e:
-      logging.error(e)
-      logging.error(host + url)
+      logger.debug(e)
+      logger.debug(host + url)
       return None

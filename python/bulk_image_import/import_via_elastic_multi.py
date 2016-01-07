@@ -36,7 +36,7 @@ def retreiveEntitiesByQuery(queries):
             entityIds.append([entity['entityId'], []])
    return entityIds
 
-def retreiveEntitiesIds(entityIds):
+def retreiveImageIds(entityIds):
    global facetList
    global labelMapping
 
@@ -60,7 +60,7 @@ def retreiveEntitiesIds(entityIds):
 
    return images
 
-def retreiveLinkedEntities(imageIds):
+def retreiveLinkedEntities(imageIds, keepLabels):
    entityIds = []
    for image in imageIds:
       if image[0] == 0:
@@ -68,12 +68,15 @@ def retreiveLinkedEntities(imageIds):
       response = sendQuery("/search?q=connectedEntities:" + str(image[0]), True) #&q=connectedEntities%3A1241415
       # print "/search?q=connectedEntities:" + str(image[0])
       # print response["entities"]
-      if "entities" in response:
+      if response != None and "entities" in response:
          for entity in response["entities"]:
             if entity['entityId'] in knownEntities:
                continue
             else:
-               entityIds.append([entity["entityId"],image[1]])
+               if keepLabels:
+                  entityIds.append([entity["entityId"],image[1]])
+               else:
+                  entityIds.append([entity["entityId"],[]])
                knownEntities.append(entity['entityId'])
 
    return entityIds
@@ -124,18 +127,21 @@ def streamFiles(exportFolder, dictionary, labelMapping):
    if not os.path.exists(os.path.dirname(testFolderPath)):
       os.makedirs(os.path.dirname(testFolderPath))
 
-   print ("\nDownloading images, every "+ str(nthAsTestImage) + "th is beeing picked as a test image.")
+   if  harvestingTest == False:
+      print ("\nDownloading images, every "+ str(nthAsTestImage) + "th is beeing picked as a test image.")
+   else:
+      print ("\nSkipping image downloads. Just writing index info files.")
 
    trainingInfoPath = exportFolder + "/label_index_info_train.txt"
    testInfoPath = exportFolder + "/label_index_info_test.txt"
 
    for imageId, labels in dictionary.items():
-      imageData = sendQuery("/image/" + str(imageId), False)
-
-      if imageData == None:
-         with open(invalidLogPath, "a") as log:
-            log.write(str(imageId)  + "\n")
-         continue
+      if harvestingTest == False:
+         imageData = sendQuery("/image/" + str(imageId), False)
+         if imageData == None:
+            with open(invalidLogPath, "a") as log:
+               log.write(str(imageId)  + "\n")
+            continue
 
       imageFileName =  str(imageId) + ".jpg"
       targetPath = ""
@@ -153,9 +159,9 @@ def streamFiles(exportFolder, dictionary, labelMapping):
       for label in labels:
          labelInfoString += " " + str(labelMapping.index(label))
       labelInfoString += "\n"
-
-      with open(targetPath, "w+") as out:
-         out.write(imageData)
+      if harvestingTest == False:
+         with open(targetPath, "w+") as out:
+            out.write(imageData)
 
       with open(infoPath, "a") as info:
          info.write(labelInfoString)
@@ -171,11 +177,13 @@ def streamFiles(exportFolder, dictionary, labelMapping):
 
 # start global variables
 host = "http://bogusman01.dai-cloud.uni-koeln.de/data"
-limitEntityQuery = 10000
+limitEntityQuery = 100
 facetList = ["facet_kategorie", "facet_material", "facet_objektgattung", "facet_technik", "facet_technik", "facet_kulturkreis", "facet_subkategorie_objekt", "title"]
-labelConfigPath = "./examples/dump_configs/elastic/labels.txt"
+labelConfigPath = "./examples/dump_configs/elastic/multi/labels.txt"
 labelMapping = []
 knownEntities = []
+
+harvestingTest = True
 # end
 
 configPath = sys.argv[1]
@@ -193,19 +201,39 @@ targetPath = "dumps/" + configJSON["exportName"]
 entityIds = retreiveEntitiesByQuery(configJSON["queries"])
 imageIds = []
 
+print "Running harvesting test (e.g. just collecting metadata, skipping image download): " + str(harvestingTest)
+
+# if len(sys.argv) == 2:
+#    with open("./dumps/" + configJSON["exportName"] + "/image_dictionary.tsv", "r") as input:
+#       for line in input.readlines()
+#          imageIds.append(line.strip())
+
+# search by config -> entity ids ohne label
+# 1)  retreive image ids -> labels
+# 1.1)entitiy ids = retreive linked via entitiy ids -> entity ids ohne label
+# 1.2)entitiy ids += retreive linked via image ids -> entity ids mit label
+# 2)  retreive image ids -> labels
+#     retreive linked via entitiy ids -> z.t. label (wenn hinzugefügt über 1.2)
+#     retreive linked via image ids -> entity ids mit label
+
 iteration = 0
+print "iteration " + str(iteration) + ", input entities: " + str(len(entityIds)) + ", images: " + str(len(imageIds)) + ", known entities: " + str(len(knownEntities))
 while iteration < 5:
-   currentImages = retreiveEntitiesIds(entityIds)
-   print "iteration " + str(iteration) + ", input entities: " + str(len(entityIds)) + ", images: " + str(len(currentImages))
-   entityIds = retreiveLinkedEntities(currentImages)
-   iteration += 1
+   currentImages = retreiveImageIds(entityIds)
+   nextEntityIds = retreiveLinkedEntities(currentImages, True)
+   nextEntityIds.extend(retreiveLinkedEntities(entityIds, False))
+   entityIds = nextEntityIds
    imageIds += currentImages
+   iteration += 1
+   print "iteration " + str(iteration) + ", input entities: " + str(len(entityIds)) + ", images: " + str(len(imageIds)) + ", new images: " + str(len(currentImages))  + ", known entities: " + str(len(knownEntities))
 
 imageDictionary = createImageDictionary(imageIds)
 
-for image in imageIds:
-   with open("./dumps/" + configJSON["exportName"] + "/image_dictionary.tsv", "a") as output:
-      output.write(str(image[0]) + "\t" + str(image[1])  + "\n")
+if not os.path.exists(os.path.dirname("./dumps/" + configJSON["exportName"] + "/image_dictionary.tsv")):
+   os.makedirs(os.path.dirname("./dumps/" + configJSON["exportName"] + "/image_dictionary.tsv"))
+
+with open("./dumps/" + configJSON["exportName"] + "/image_dictionary.tsv", "w") as output:
+   json.dump(imageDictionary, output)
 
 indexLabelMappingPath = targetPath + "/label_index_mapping.txt"
 

@@ -2,3 +2,4 @@ dumps/*
 webdemo/bootstrap/*
 *.pyc
 examples/dump_configs/elastic/*.json
+examples/images/*

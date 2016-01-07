@@ -12,27 +12,29 @@ trainPath = 'label_index_info_train.txt'
 testPath = 'label_index_info_test.txt'
 mappingPath = 'label_index_mapping.txt'
 
-def evaluate(dumpRootPath, logPath, showPlot):
+def getCardinalityAndDensity(infoPath, labelCount):
+   labelSum = 0
+   density = 0
+   histogram = np.array([0] * labelCount)
+   with open(infoPath) as input:
+      counter = 0
+      for line in input.readlines():
+         split = line.split()
+         splitLabels = [int(x) for x in split[1:]]
+         histogram[splitLabels] += 1
+         labelSum += len(split[1:])
+         counter += 1
+      cardinality = float(labelSum) / counter
+      density = cardinality / labelCount
+      return [cardinality, density, histogram]
+
+def evaluate(dumpRootPath, logPath, plotPath, showPlot):
 
    # see https://en.wikipedia.org/wiki/Multi-label_classification#Statistics_and_evaluation_metrics
    labelCardinality = 0
    labelDensity = 0
 
-   def getCardinalityAndDensity(infoPath, labelCount):
-      labelSum = 0
-      density = 0
-      histogram = np.array([0] * labelCount)
-      with open(infoPath) as input:
-         counter = 0
-         for line in input.readlines():
-            split = line.split()
-            splitLabels = [int(x) for x in split[1:]]
-            histogram[splitLabels] += 1
-            labelSum += len(split[1:])
-            counter += 1
-         cardinality = float(labelSum) / counter
-         density = cardinality / labelCount
-         return [cardinality, density, histogram]
+
 
    labelCount = 0
    labelMapping = []
@@ -56,34 +58,34 @@ def evaluate(dumpRootPath, logPath, showPlot):
       out.write('training\tlabel cardinality: ' + str(cardinalityTraining) + ', label density: ' + str(densityTraining) + '\n')
       out.write('training labels:\n')
       for index, value in enumerate(labelMapping):
-         out.write(value.encode('utf8') + ': '+ str(histogramTest[index]) + '\n')
-      out.write('test\t\tlabel cardinality: ' + str(cardinalityTest) + ', label density: ' + str(densityTest) + '\n')
+         out.write(value.encode('utf8') + ': '+ str(histogramTraining[index]) + '\n')
+      out.write('test\t\tlabelprint cardinality: ' + str(cardinalityTest) + ', label density: ' + str(densityTest) + '\n')
       out.write('test labels:\n')
       for index, value in enumerate(labelMapping):
-         out.write(value.encode('utf8') + ': '+ str(histogramTraining[index]) + '\n')
+         out.write(value.encode('utf8') + ': '+ str(histogramTest[index]) + '\n')
       out.write('\n')
 
       logger.info('training: label cardinality: ' + str(cardinalityTraining) + ', label density: ' + str(densityTraining))
       logger.info('test\t: label cardinality: ' + str(cardinalityTest) + ', label density: ' + str(densityTest))
       logger.info('Writing complete label statistics to file ' + os.path.abspath(logPath))
 
-   plotFilePath = os.path.splitext(logPath)[0] + '_label_distribution'+ '.pdf'
-   logger.info('Saving label distribution plot to file ' + os.path.abspath(plotFilePath))
+   logger.info('Saving label distribution plot to file ' + os.path.abspath(plotPath))
    y_pos = np.arange(len(labelMapping))
    plt.barh(y_pos, histogramTraining, align='center')
    plt.yticks(y_pos, labelMapping)
    plt.title('Label distribution:')
-   plt.savefig(plotFilePath)
+   plt.savefig(plotPath)
 
    if showPlot:
       plt.show()
 
 if __name__ == '__main__':
-   if(len(sys.argv) != 3):
-      print ('Required:')
-      print('1) Path to a elastic dump as argv[1]')
-      print('2) Path/name for log file as argv[2]')
-      print('Exiting...')
+   if(len(sys.argv) != 4):
+      logger.error('Required:')
+      logger.error('1) Path to a elastic dump as argv[1]')
+      logger.error('2) Path/name for log file as argv[2]')
+      logger.error('3) Path/name for log file as argv[3]')
+      logger.error('Exiting...')
       sys.exit()
    else:
-      evaluate(sys.argv[1], sys.argv[2], True)
+      evaluate(sys.argv[1], sys.argv[2], sys.argv[3], True)
