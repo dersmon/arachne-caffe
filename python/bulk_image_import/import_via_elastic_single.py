@@ -7,14 +7,13 @@ import urllib2 as URL
 import json
 import elastic_query
 import download_statistics
+import base64
 
-
-
-limitEntityQuery = 150
-imagePerEntity = 50
+limitEntityQuery = 100
+imagePerEntity = 15
 labelMapping = []
 targetPath = './image_dumps/'
-harvestingTest = True
+harvestingTest = False
 labelDistributionAdjusted = []
 adjustmentFactor = 1
 
@@ -159,13 +158,18 @@ def streamFiles(exportFolder, dictionary, labelMapping):
    trainingFolderPath = exportFolder + '/train/'
    testFolderPath = exportFolder + '/test/'
 
-   logger.debug('Path to training images: ' + trainingFolderPath)
-   if not os.path.exists(os.path.dirname(trainingFolderPath)):
-      os.makedirs(os.path.dirname(trainingFolderPath))
+   logger.debug(trainingFolderPath)
+   logger.debug(testFolderPath)
 
-   logger.debug('Path to test images: ' + testFolderPath)
-   if not os.path.exists(os.path.dirname(testFolderPath)):
-      os.makedirs(os.path.dirname(testFolderPath))
+   for label in labelMapping:  
+
+      if not os.path.exists(os.path.dirname(trainingFolderPath + label + '/')):
+         os.makedirs(os.path.dirname(trainingFolderPath + label + '/'))
+         logger.debug('Created folder: ' + trainingFolderPath + label + '/')
+
+      if not os.path.exists(os.path.dirname(testFolderPath + label + '/')):
+         os.makedirs(os.path.dirname(testFolderPath + label + '/'))
+         logger.debug('Created folder: ' + testFolderPath + label + '/')
 
    if  harvestingTest== False:
       logger.info('\nDownloading images, every '+ str(nthAsTestImage) + 'th is beeing picked as a test image.')
@@ -190,10 +194,10 @@ def streamFiles(exportFolder, dictionary, labelMapping):
       infoPath = None
 
       if counter % nthAsTestImage == 0:
-         targetPath = testFolderPath + imageFileName
+         targetPath = testFolderPath + label + '/' + imageFileName
          infoPath = testInfoPath
       else:
-         targetPath = trainingFolderPath + imageFileName
+         targetPath = trainingFolderPath + label + '/' + imageFileName
          infoPath = trainingInfoPath
 
       labelInfoString = targetPath + ' ' + str(labelMapping.index(label)) + '\n'
