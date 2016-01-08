@@ -2,6 +2,7 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import modules.arachne_caffe as ac
+import logging
 
 logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -33,6 +34,7 @@ if __name__ == '__main__':
       logger.info("1) path to dump root directory as argv[1]")
       logger.info("2) filename training numpy data as argv[2]")
       logger.info("3) filename test numpy data as argv[3]")
+      sys.exit
    else:
       trainingDataInfoPath = sys.argv[1] + trainingDataInfoPath
       testDataInfoPath = sys.argv[1] + testDataInfoPath

@@ -5,6 +5,11 @@ import caffe
 os.environ['GLOG_minloglevel'] = '0'
 import json
 import numpy as np
+import logging
+
+logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 def getNetAndTransformer():
 
@@ -38,7 +43,7 @@ def crunchDumpFiles(dataInfoFilePath, batchSize, batchLimit, labelCount):
 	activations = []
 
 	net, transformer = getNetAndTransformer()
-	print ('Calculating activations for images mentioned in ' + dataInfoFilePath + ':')
+	logger.info('Calculating activations for images mentioned in ' + dataInfoFilePath + ':')
 
 	with open(dataInfoFilePath, "r") as result:
 		currentBatch = []
@@ -66,7 +71,7 @@ def crunchDumpFiles(dataInfoFilePath, batchSize, batchLimit, labelCount):
 					break;
 
 	activations.extend(evaluateImageBatch(net, transformer, currentBatch, labelCount))
-	print ('Final number of images processed: ' + str(len(activations)))
+	logger.info('Final number of images processed: ' + str(len(activations)))
 	return activations
 
 
@@ -95,13 +100,13 @@ def evaluateImageBatch(net, transformer, imageBatch, labelCount):
 	return batchActivations
 
 def activationsToFile(activations, filePath):
-	print ('Writing file ' + filePath)
+	logger.info('Writing file ' + filePath)
 	if not os.path.exists(os.path.dirname(filePath)):
 		os.makedirs(os.path.dirname(filePath))
 	with open(filePath, "w") as outputFile:
 		np.save(outputFile, activations)
 
 def activationsFromFile(filePath):
-	print ('Opening file: ' + filePath)
+	logger.info('Opening file: ' + filePath)
 	with open(filePath, 'r') as inputFile:
 		return np.load(inputFile)
