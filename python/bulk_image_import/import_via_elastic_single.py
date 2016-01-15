@@ -6,7 +6,7 @@ import os
 import urllib2 as URL
 import json
 import elastic_query
-import download_statistics
+import import_statistics
 import base64
 
 limitEntityQuery = 100
@@ -161,7 +161,7 @@ def streamFiles(exportFolder, dictionary, labelMapping):
    logger.debug(trainingFolderPath)
    logger.debug(testFolderPath)
 
-   for label in labelMapping:  
+   for label in labelMapping:
 
       if not os.path.exists(os.path.dirname(trainingFolderPath + label + '/')):
          os.makedirs(os.path.dirname(trainingFolderPath + label + '/'))
