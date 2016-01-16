@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import modules.arachne_caffe as ac
-import modules.arachne_KNNPrediction as aknn
+import modules.arachne_KNN_prediction as aknn
 import modules.arachne_plotting as ap
 
 def testKNN(training, test, labelCount, k):
@@ -73,8 +73,8 @@ else:
 
 labelCount = len(trainingActivations[0][4096:])
 
-ap.plotActivations(trainingActivations, 4096)
-ap.plotActivations(testActivations, 4096)
+# ap.plotActivations(trainingActivations, 4096)
+# ap.plotActivations(testActivations, 4096)
 
 
-testKNN(trainingActivations, testActivations, labelCount, 0)
+testKNN(trainingActivations, testActivations, labelCount, 50)

@@ -21,7 +21,7 @@ def getKNearestNeighbours(training, test, k):
 		distances = np.empty((len(training), (1 + (training[0][4096:]).size)), dtype='float16')
 		batchCounter = 0
 
-		print ('1) Memory usage: %s (kb)' % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss - previous))
+		# print ('1) Memory usage: %s (kb)' % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss - previous))
 		previous = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
 
 		while batchCounter < len(training):
@@ -39,7 +39,7 @@ def getKNearestNeighbours(training, test, k):
 
 			batchCounter += batchSize
 
-		print ('2) Memory usage: %s (kb)' % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss - previous))
+		# print ('2) Memory usage: %s (kb)' % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss - previous))
 		previous = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
 		distances = distances[np.argsort(distances[:,0])]
 		neighbours = np.copy(distances[np.argsort(distances[:,0])][0:k])
@@ -49,10 +49,10 @@ def getKNearestNeighbours(training, test, k):
 		results.append({'labelIds': np.array(testVectorLabels, dtype="int8"), 'neighbours': neighbours})
 
 		count += 1
-		print ('3) Memory usage: %s (kb)' % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss - previous))
+		# print ('3) Memory usage: %s (kb)' % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss - previous))
 		previous = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
 
-		print ('Overall memory usage: %s (kb)' % resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
+		# print ('Overall memory usage: %s (kb)' % resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
 
 		if count % 100 == 0:
 			print ('Calculated nearest neighbours for ' + str(count) + ' test vectors.')
