@@ -9,7 +9,7 @@ import elastic_query
 import download_statistics
 import base64
 
-limitEntityQuery = 100
+limitEntityQuery = 125
 imagePerEntity = 15
 labelMapping = []
 targetPath = './image_dumps/'
@@ -161,7 +161,7 @@ def streamFiles(exportFolder, dictionary, labelMapping):
    logger.debug(trainingFolderPath)
    logger.debug(testFolderPath)
 
-   for label in labelMapping:  
+   for label in labelMapping:
 
       if not os.path.exists(os.path.dirname(trainingFolderPath + label + '/')):
          os.makedirs(os.path.dirname(trainingFolderPath + label + '/'))
@@ -172,9 +172,9 @@ def streamFiles(exportFolder, dictionary, labelMapping):
          logger.debug('Created folder: ' + testFolderPath + label + '/')
 
    if  harvestingTest== False:
-      logger.info('\nDownloading images, every '+ str(nthAsTestImage) + 'th is beeing picked as a test image.')
+      logger.info('Downloading images, every '+ str(nthAsTestImage) + 'th is beeing picked as a test image.')
    else:
-      logger.info('\nSkipping image downloads. Just writing index info files.')
+      logger.info('Skipping image downloads. Just writing index info files.')
 
    trainingInfoPath = exportFolder + '/label_index_info_train.txt'
    testInfoPath = exportFolder + '/label_index_info_test.txt'

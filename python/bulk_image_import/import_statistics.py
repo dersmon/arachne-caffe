@@ -3,10 +3,11 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import logging
+import operator
 
 logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 trainPath = 'label_index_info_train.txt'
 testPath = 'label_index_info_test.txt'
@@ -52,13 +53,21 @@ def evaluate(dumpRootPath, logPath, plotPath, showPlot):
    cardinalityTraining, densityTraining, histogramTraining = getCardinalityAndDensity(dumpRootPath + trainPath, labelCount)
    cardinalityTest, densityTest, histogramTest = getCardinalityAndDensity(dumpRootPath + testPath, labelCount)
 
+   labelDictionary = dict()
+   for index, value in enumerate(labelMapping):
+      labelDictionary[value.encode('utf8')] = histogramTraining[index]
+
+   labelDictionarySorted = sorted(labelDictionary.items(), key=operator.itemgetter(1))
+
+   logger.debug(labelDictionarySorted)
+
    with open(logPath, 'a') as out:
       out.write(os.path.abspath(dumpRootPath) + '\n')
       out.write('labels\t\t' + str(labelCount) + '\n')
       out.write('training\tlabel cardinality: ' + str(cardinalityTraining) + ', label density: ' + str(densityTraining) + '\n')
       out.write('training labels:\n')
-      for index, value in enumerate(labelMapping):
-         out.write(value.encode('utf8') + ': '+ str(histogramTraining[index]) + '\n')
+      for index, value in enumerate(labelDictionarySorted):
+         out.write(value[0] + ': '+ str(value[1]) + '\n')
       out.write('test\t\tlabelprint cardinality: ' + str(cardinalityTest) + ', label density: ' + str(densityTest) + '\n')
       out.write('test labels:\n')
       for index, value in enumerate(labelMapping):
@@ -84,7 +93,7 @@ if __name__ == '__main__':
       logger.error('Required:')
       logger.error('1) Path to a elastic dump as argv[1]')
       logger.error('2) Path/name for log file as argv[2]')
-      logger.error('3) Path/name for log file as argv[3]')
+      logger.error('3) Path/name for plot of labeldistribution as argv[3]')
       logger.error('Exiting...')
       sys.exit()
    else:
