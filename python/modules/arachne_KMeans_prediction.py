@@ -1,5 +1,10 @@
 import numpy as np
 import random
+import logging
+
+logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 def kMeans(activationVectors, labelCount):
 
@@ -98,13 +103,13 @@ def clusterTest(clusters, testVectors, labelCount):
 
 		# Calculate distance to centers
 		for center in clusters:
-			difference = center['position'] - activation[1:]
+			difference = center['position'] - activation[0:4096]
 			distances.append(np.linalg.norm(difference))
 
 		centerCounter = 0
 		for center in clusters:
 			if centerCounter == np.argmin(distances):
-				if center['maxLabelID'] == int(activation[0]):
+				if center['maxLabelID'] == int(activation[4096:]):
 					correct += 1
 					correctPerLabel[int(activation[0])] += 1
 				else:
@@ -159,6 +164,7 @@ def multipleLabelsPerImage(activations, clusterCount, iterations):
 
 	counter = 0
 	while counter < iterations:
+		logger.info("KMeans iteration " + str(counter + 1))
 		clusters = kMeansIterationMultipleLabels(clusters, activations)
 		counter += 1
 

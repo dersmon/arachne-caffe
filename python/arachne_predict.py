@@ -1,47 +1,11 @@
 import sys
 import os
-import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 
-import modules.arachne_caffe as anl
-import modules.arachne_KNNPrediction as aknnp
-import modules.arachne_KMeansPrediction as akmp
-
-
-
-'''
-def drawGrids(activations):
-
-	global overallMaxValue
-	#plt.imshow(grid[1], 'Greys_r', interpolation='none')
-	#plt.show()
-
-	counter = 0
-	grids = []
-	for activation in activations:
-
-		grid =  np.reshape(activation[1], (64, 64))
-
-		scaledGrid = grid * (255 / overallMaxValue)
-
-		grids.append([activation[0], scaledGrid]);
-
-		counter += 1
-
-		if counter == 6*3:
-			break
-
-	fig, axes = plt.subplots(3, 6, figsize=(12, 6), subplot_kw={'xticks': [], 'yticks': []})
-
-	fig.subplots_adjust(hspace=0.3, wspace=0.05)
-
-	for ax, grid in zip(axes.flat, grids):
-		ax.imshow(grid[1], 'Greys_r', interpolation='none')
-		ax.set_title(grid[0])
-
-	plt.show()
-'''
+import modules.arachne_caffe as ac
+import modules.arachne_KNN_prediction as aknnp
+import modules.arachne_KMeans_prediction as akmp
 
 def drawVectors(vectors):
 	labels = np.array(vectors)[:,4096:]
@@ -94,8 +58,8 @@ def testKNN(training, test, labelCount):
 	plt.grid(True)
 	plt.show()
 
-def testKMeans(training, test, labelCount):
-	clusters = akmp.multipleLabelsPerImage(training, labelCount, 500)
+def calculateKMeans(training, labelCount):
+	clusters = akmp.multipleLabelsPerImage(training, labelCount * 2, 50)
 
 	filePath = "./clusters_small.npy"
 
@@ -107,48 +71,44 @@ def testKMeans(training, test, labelCount):
 
 	clusters = akmp.clusterAnalysisMultipleLabels(clusters, training)
 
-trainingInfo = './dumps/elastic_test/label_index_info_train.txt'
-testInfo = './dumps/elastic_test/label_index_info_test.txt'
-labelInfo = './dumps/elastic_test/label_index_mapping.txt'
+def testKMeans(test, labelCount):
 
-trainingActivationVectorsFile = './training_vectors_elastic.npy'
-testActivationVectorsFile = './test_vectors_elastic.npy'
+	with open("clusters_small.npy", 'r') as inputFile:
+		clusters = np.load(inputFile)
 
-batchSize = 100
-batchLimit = 0
+		akmp.clusterTest(clusters, test, labelCount)
 
-labelCount = 18
-trainingActivationVectors = []
-testActivationVectors = []
+trainingActivationsPath = ""
+testActivationsPath = ""
 
-trainingJSONPath = ""
-testJSONPath = ""
+trainingActivations = None
+testActivations = None
 
 if(len(sys.argv) < 2):
-	"No activation vectors provided."
+	print("No activation vectors provided.")
 else:
-	trainingJSONPath = sys.argv[1]
+	trainingActivationsPath = sys.argv[1]
 
 if(len(sys.argv) < 3):
-	"No activation vectors provided."
+	print("No activation vectors provided.")
 else:
-	testJSONPath = sys.argv[2]
+	testActivationsPath = sys.argv[2]
 
-
-if trainingJSONPath.endswith('.npy'):
-	trainingActivationVectors = anl.readVectorsFromJSON(trainingJSONPath)
+if trainingActivationsPath.endswith('.npy'):
+	trainingActivations = ac.activationsFromFile(trainingActivationsPath)
 else:
-	trainingActivationVectors = anl.readDumpInfo(trainingInfo, batchSize, batchLimit, labelCount)
-	anl.writeVectorsToJSON(trainingActivationVectors, trainingActivationVectorsFile)
+	print(trainingActivationsPath + " does not seem to be a npy-file with activations.")
 
-if testJSONPath.endswith('.npy'):
-	testActivationVectors = anl.readVectorsFromJSON(testJSONPath)
+if testActivationsPath.endswith('.npy'):
+	testActivations = ac.activationsFromFile(testActivationsPath)
 else:
-	testActivationVectors = anl.readDumpInfo(testInfo, batchSize, batchLimit, labelCount)
-	anl.writeVectorsToJSON(testActivationVectors, testActivationVectorsFile)
+	print(testActivations + " does not seem to be a npy-file with activations.")
+
+labelCount = len(trainingActivations[0][4096:])
 
 #drawVectors(trainingActivationVectors)
 
-testKNN(trainingActivationVectors, testActivationVectors, labelCount)
+#testKNN(trainingActivations, testActivations, labelCount)
 
-# testKMeans(trainingActivationVectors, testActivationVectors, labelCount)
+#calculateKMeans(trainingActivations, labelCount)
+testKMeans(testActivations, labelCount )

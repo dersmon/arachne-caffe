@@ -6,7 +6,7 @@ import os
 import urllib2 as URL
 import json
 import elastic_query
-import download_statistics
+import import_statistics
 import base64
 
 limitEntityQuery = 125

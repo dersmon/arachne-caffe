@@ -1,8 +1,8 @@
 import sys
 import os
-os.environ['GLOG_minloglevel'] = '2' # comment to read full caffe log
+#os.environ['GLOG_minloglevel'] = '2' # comment to read full caffe log
 import caffe
-os.environ['GLOG_minloglevel'] = '0'
+#os.environ['GLOG_minloglevel'] = '0'
 import json
 import numpy as np
 import logging
@@ -65,7 +65,7 @@ def crunchDumpFiles(dataInfoFilePath, batchSize, batchLimit, labelCount):
 				currentBatch = []
 				batchCount += 1
 
-				print str(len(activations))
+				logger.info(str(len(activations)))
 
 				if batchCount == batchLimit and batchLimit != 0:
 					break;
