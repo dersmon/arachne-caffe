@@ -7,6 +7,12 @@ import modules.arachne_caffe as ac
 import modules.arachne_KNN_prediction as aknnp
 import modules.arachne_KMeans_prediction as akmp
 
+import logging
+
+logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
 def drawVectors(vectors):
 	labels = np.array(vectors)[:,4096:]
 	grid = np.array(vectors)[:,0:4096]
@@ -59,9 +65,23 @@ def testKNN(training, test, labelCount):
 	plt.show()
 
 def calculateKMeans(training, labelCount):
-	clusters = akmp.kMeans(training, labelCount * 2, 50)
 
-	filePath = "./clusters_small.npy"
+	clusterCount = labelCount * 3
+
+	filePath = "./clusters.npy"
+	clusters = None
+	clusters = akmp.kMeans(training, clusterCount, 150)
+
+	# print 'Writing file ' + filePath
+	# if not os.path.exists(os.path.dirname(filePath)):
+	# 	os.makedirs(os.path.dirname(filePath))
+	# with open(filePath, "w") as outputFile:
+	# 	np.save(outputFile, clusters)
+
+	# with open("clusters.npy", 'r') as inputFile:
+	# 	clusters = np.load(inputFile)
+
+	clusters = akmp.clusterAnalysis(clusters, training, labelCount)
 
 	print 'Writing file ' + filePath
 	if not os.path.exists(os.path.dirname(filePath)):
@@ -69,11 +89,11 @@ def calculateKMeans(training, labelCount):
 	with open(filePath, "w") as outputFile:
 		np.save(outputFile, clusters)
 
-	clusters = akmp.clusterAnalysis(clusters, training, labelCount)
+
 
 def testKMeans(test, labelCount):
 
-	with open("clusters_small.npy", 'r') as inputFile:
+	with open("clusters.npy", 'r') as inputFile:
 		clusters = np.load(inputFile)
 
 		akmp.clusterTest(clusters, test, labelCount)
