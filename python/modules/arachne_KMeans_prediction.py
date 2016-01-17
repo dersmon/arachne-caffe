@@ -1,24 +1,72 @@
 import numpy as np
 import random
 import logging
+import time
+
+from multiprocessing import Process, Queue, current_process, freeze_support
 
 logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
-def kMeans(activationVectors, labelCount):
+
+def worker(input, output):
+	for func, args in iter(input.get, 'STOP'):
+		result = func(*args)
+		output.put(result)
+
+def runMultiprocess(self, center, activations):
+	distances = []
+
+	# Calculate distance to centers
+	differences = center['position'] - activations[:][0:4096].T
+	logger.debug(differences.shape)
+
+	differences = np.linalg.norm(differences, None, 1)
+	logger.debug('Differences for cluster center ' + __name__)
+	logger.debug(differences.shape)
+
+	return differences
+
+def process_data(threadName, q):
+    while not exitFlag:
+        queueLock.acquire()
+        if not workQueue.empty():
+            data = q.get()
+            queueLock.release()
+            print "%s processing %s" % (threadName, data)
+        else:
+            queueLock.release()
+        time.sleep(1)
+
+def kMeans(activationVectors, labelCount, maxIterations):
 
 	centers = []
 	count = 0
 	running = 1
+
+	# Initialize empty cluster centers.
 	while count < labelCount:
-		centers.append({'position':random.choice(activationVectors)[1:], 'clusterMembers': []})
+		centers.append({'position':random.choice(activationVectors)[0:4096], 'clusterMembers': []})
 		count += 1
 
-	count = 0
-	while count < 100:
+	# Run K-means iterations.
+	iteration = 0
+	while iteration < maxIterations:
+		logger.info("Running KMeans iteration " + str(iteration) + ".")
+		oldCenters = centers
 		centers = kMeansIteration(centers, activationVectors)
-		count += 1
+
+		changed = False
+		for idx, val in enumerate(oldCenters):
+			if not (oldCenters[idx]['position'] == centers[idx]['position']).all():
+				changed = True
+
+		if not (changed):
+			logger.info("Cluster centers did not change positions. Iteration " + str(iteration))
+			break
+
+		iteration += 1
 
 	return centers
 
@@ -31,13 +79,13 @@ def kMeansIteration(centers, activations):
 		tempCenters.append({'position':center.get('position'), 'clusterMembers': []})
 
 	count = 0
+
 	for activation in activations:
 
 		distances = []
-
 		# Calculate distance to centers
 		for center in centers:
-			difference = center['position'] - activation[1:]
+			difference = center['position'] - activation[0:4096]
 			distances.append(np.linalg.norm(difference))
 
 		# Assign to closest center
@@ -48,17 +96,16 @@ def kMeansIteration(centers, activations):
 		count += 1
 
 	# Adjust centers towards mean of assigned vectors
-
 	for center in tempCenters:
-		#print "Assigned points: " + str(center['clusterMembers'])
-		points = [activations[i][1:] for i in center['clusterMembers']]
+		# logger.debug("Assigned points: " + str(center['clusterMembers']))
+		points = [activations[i][0:4096] for i in center['clusterMembers']]
 
 		updatedPosition = np.sum(points, axis=0)
 		if len(center['clusterMembers']) != 0:
 			updatedPosition /= len(center['clusterMembers'])
 
-		#print 'old position: ' + str(center['position']) + ', length: ' + str(len(center['position']))
-		#print 'new position: ' + str(updatedPosition) + ', length: ' + str(updatedPosition.shape[0])
+		# logger.debug('old position: ' + str(center['position']) + ', length: ' + str(len(center['position'])))
+		# logger.debug('new position: ' + str(updatedPosition) + ', length: ' + str(updatedPosition.shape[0]))
 
 		updatedCenters.append({'position':updatedPosition, 'clusterMembers':center['clusterMembers']})
 
@@ -69,7 +116,7 @@ def clusterAnalysis(training, clusters, labelCount):
 	analysedCluster = []
 	counter = 0
 	for cluster in clusters:
-		print 'Cluster ' + str(counter) + ', labels:'
+		logger.info('Cluster ' + str(counter) + ', labels:')
 		points =[int(training[i][0]) for i in cluster['clusterMembers']]
 
 		labelDistribution = [0] * labelCount
@@ -77,7 +124,7 @@ def clusterAnalysis(training, clusters, labelCount):
 		for point in points:
 			labelDistribution[point] += 1
 
-		print str(labelDistribution)
+		logger.info(str(labelDistribution))
 
 		maxLabelId = np.argmax(labelDistribution)
 
@@ -109,7 +156,7 @@ def clusterTest(clusters, testVectors, labelCount):
 		centerCounter = 0
 		for center in clusters:
 			if centerCounter == np.argmin(distances):
-				if center['maxLabelID'] == int(activation[4096:]):
+				if center['maxLabelID'] == np.argwhere(activation[4096:] == 1)):
 					correct += 1
 					correctPerLabel[int(activation[0])] += 1
 				else:

@@ -59,7 +59,7 @@ def testKNN(training, test, labelCount):
 	plt.show()
 
 def calculateKMeans(training, labelCount):
-	clusters = akmp.multipleLabelsPerImage(training, labelCount * 2, 50)
+	clusters = akmp.kMeans(training, labelCount * 2, 50)
 
 	filePath = "./clusters_small.npy"
 
@@ -69,7 +69,7 @@ def calculateKMeans(training, labelCount):
 	with open(filePath, "w") as outputFile:
 		np.save(outputFile, clusters)
 
-	clusters = akmp.clusterAnalysisMultipleLabels(clusters, training)
+	clusters = akmp.clusterAnalysis(clusters, training, labelCount)
 
 def testKMeans(test, labelCount):
 
@@ -99,10 +99,7 @@ if trainingActivationsPath.endswith('.npy'):
 else:
 	print(trainingActivationsPath + " does not seem to be a npy-file with activations.")
 
-if testActivationsPath.endswith('.npy'):
-	testActivations = ac.activationsFromFile(testActivationsPath)
-else:
-	print(testActivations + " does not seem to be a npy-file with activations.")
+
 
 labelCount = len(trainingActivations[0][4096:])
 
@@ -110,5 +107,11 @@ labelCount = len(trainingActivations[0][4096:])
 
 #testKNN(trainingActivations, testActivations, labelCount)
 
-#calculateKMeans(trainingActivations, labelCount)
+calculateKMeans(trainingActivations, labelCount)
+
+if testActivationsPath.endswith('.npy'):
+	testActivations = ac.activationsFromFile(testActivationsPath)
+else:
+	print(testActivations + " does not seem to be a npy-file with activations.")
+
 testKMeans(testActivations, labelCount )

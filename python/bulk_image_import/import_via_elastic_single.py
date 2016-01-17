@@ -9,7 +9,9 @@ import elastic_query
 import import_statistics
 import base64
 
-limitEntityQuery = 125
+
+limitEntityQuery = 10
+
 imagePerEntity = 15
 labelMapping = []
 targetPath = './image_dumps/'
@@ -87,7 +89,7 @@ def startBulkDownload(targetPath, configJSON, showStatisticsPlot):
 
    streamFiles(targetPath, imageDictionary, labelMapping)
 
-   download_statistics.evaluate( targetPath + '/', targetPath + '/' + 'labelinfo.log', targetPath + '/distribution_' + '.pdf' ,  showStatisticsPlot)
+   import_statistics.evaluate( targetPath + '/', targetPath + '/' + 'labelinfo.log', targetPath + '/distribution_' + '.pdf' ,  showStatisticsPlot)
 
 def retreiveEntityIds(queries, limitByDistribution):
    logger.info('Retreiving entity IDs...')
