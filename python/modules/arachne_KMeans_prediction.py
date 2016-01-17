@@ -9,36 +9,6 @@ logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-
-def worker(input, output):
-	for func, args in iter(input.get, 'STOP'):
-		result = func(*args)
-		output.put(result)
-
-def runMultiprocess(self, center, activations):
-	distances = []
-
-	# Calculate distance to centers
-	differences = center['position'] - activations[:][0:4096].T
-	logger.debug(differences.shape)
-
-	differences = np.linalg.norm(differences, None, 1)
-	logger.debug('Differences for cluster center ' + __name__)
-	logger.debug(differences.shape)
-
-	return differences
-
-def process_data(threadName, q):
-    while not exitFlag:
-        queueLock.acquire()
-        if not workQueue.empty():
-            data = q.get()
-            queueLock.release()
-            print "%s processing %s" % (threadName, data)
-        else:
-            queueLock.release()
-        time.sleep(1)
-
 def kMeans(activationVectors, labelCount, maxIterations):
 
 	centers = []
@@ -72,63 +42,121 @@ def kMeans(activationVectors, labelCount, maxIterations):
 
 def kMeansIteration(centers, activations):
 
-	tempCenters = []
+	# tempCenters = []
 	updatedCenters = []
-
-	for center in centers:
-		tempCenters.append({'position':center.get('position'), 'clusterMembers': []})
-
+	#
+	# for center in centers:
+	# 	tempCenters.append({'position':center.get('position'), 'clusterMembers': []})
+	# logger.debug(len(activations))
+	# logger.debug(activations.shape)
 	count = 0
 
-	for activation in activations:
+	# logger.debug(len(activations))
 
-		distances = []
-		# Calculate distance to centers
-		for center in centers:
-			difference = center['position'] - activation[0:4096]
-			distances.append(np.linalg.norm(difference))
 
-		# Assign to closest center
-		members = tempCenters[np.argmin(distances)].get('clusterMembers')
-		members.append(count)
-		tempCenters[np.argmin(distances)]['clusterMembers'] = members
+	distances = []
+	for center in centers:
+		# logger.debug("New center: ")
+		# logger.debug(center['position'].shape)
+		# logger.debug(activations[:,0:4096].shape)
+		centerDistances = []
+		batchCount = 0
+		batchSize = 4000
 
-		count += 1
+		while(batchCount < len(activations)):
+			differences = (activations[batchCount:(batchCount+batchSize),0:4096] - center['position']).T
+			# logger.debug(differences.shape)
+			temp = np.linalg.norm(differences, None, 0)
+			# logger.debug(temp.shape)
+			centerDistances.extend(np.linalg.norm(differences, None, 0))
+			batchCount += batchSize
 
-	# Adjust centers towards mean of assigned vectors
-	for center in tempCenters:
-		# logger.debug("Assigned points: " + str(center['clusterMembers']))
-		points = [activations[i][0:4096] for i in center['clusterMembers']]
+		# logger.debug(len(centerDistances))
+
+		distances.append(np.array(centerDistances))
+		# distances for each activation (1:41xx o.ae.)
+
+	distances = np.array(distances)
+
+	logger.debug("Complete: ")
+	logger.debug(len(distances))
+	logger.debug(distances[0].shape)
+
+	minDistanceIndex = np.argmin(distances, axis=0)
+	# logger.debug(minDistanceIndex)
+	logger.debug(np.unique(minDistanceIndex))
+	# (4105,) = minDistanceIndex.shape, each value is index of cluster nearest to value
+
+	counter = 0
+	for center in centers:
+		members = np.where(minDistanceIndex == counter)[0]
+		points = [activations[i,0:4096] for i in members]
+
+		# logger.debug("Members:")
+		# logger.debug(members)
+		# logger.debug(members.shape)
+		# logger.debug("Coordinates:")
+		# logger.debug(np.array(points).shape)
 
 		updatedPosition = np.sum(points, axis=0)
-		if len(center['clusterMembers']) != 0:
-			updatedPosition /= len(center['clusterMembers'])
+		if len(members) != 0:
+			updatedPosition /= len(members)
+
+		updatedCenters.append({'position':updatedPosition, 'clusterMembers':members})
+		counter += 1
+
+
+	# for activation in activations:
+	#
+	# 	distances = []
+	# 	# Calculate distance to centers
+	# 	for center in centers:
+	# 		difference = center['position'] - activation[0:4096]
+	# 		distances.append(np.linalg.norm(difference))
+	#
+	# 	# Assign to closest center
+	# 	members = tempCenters[np.argmin(distances)].get('clusterMembers')
+	# 	members.append(count)
+	# 	tempCenters[np.argmin(distances)]['clusterMembers'] = members
+	#
+	# 	count += 1
+
+	# Adjust centers towards mean of assigned vectors
+	# for center in tempCenters:
+		# logger.debug("Assigned points: " + str(center['clusterMembers']))
+		# points = [activations[i][0:4096] for i in center['clusterMembers']]
+		#
+		# updatedPosition = np.sum(points, axis=0)
+		# if len(center['clusterMembers']) != 0:
+		# 	updatedPosition /= len(center['clusterMembers'])
 
 		# logger.debug('old position: ' + str(center['position']) + ', length: ' + str(len(center['position'])))
 		# logger.debug('new position: ' + str(updatedPosition) + ', length: ' + str(updatedPosition.shape[0]))
 
-		updatedCenters.append({'position':updatedPosition, 'clusterMembers':center['clusterMembers']})
+		# updatedCenters.append({'position':updatedPosition, 'clusterMembers':center['clusterMembers']})
 
 	return updatedCenters
 
-def clusterAnalysis(training, clusters, labelCount):
+def clusterAnalysis(clusters, training, labelCount):
 
 	analysedCluster = []
 	counter = 0
 	for cluster in clusters:
 		logger.info('Cluster ' + str(counter) + ', labels:')
-		points =[int(training[i][0]) for i in cluster['clusterMembers']]
+		labelFlags = [training[i,4096:] for i in cluster['clusterMembers']]
 
 		labelDistribution = [0] * labelCount
+		# logger.debug(labelFlags)
+		labelIndices = np.where(np.array(labelFlags[:]) == 1)
+		# logger.debug(labelIndices[1])
 
-		for point in points:
-			labelDistribution[point] += 1
+		for index in labelIndices[1]:
+			labelDistribution[index] += 1
 
-		logger.info(str(labelDistribution))
-
+		logger.info(labelDistribution)
 		maxLabelId = np.argmax(labelDistribution)
 
-		analysedCluster.append({'position': cluster['position'], 'maxLabelID': maxLabelId, 'memberLabelIDs': points, 'labelDistribution': labelDistribution})
+		analysedCluster.append({'position': cluster['position'], 'maxLabelID': maxLabelId, 'memberLabelIDs': labelIndices, 'labelDistribution': labelDistribution})
 		counter += 1
 
 	return analysedCluster
@@ -156,12 +184,12 @@ def clusterTest(clusters, testVectors, labelCount):
 		centerCounter = 0
 		for center in clusters:
 			if centerCounter == np.argmin(distances):
-				if center['maxLabelID'] == np.argwhere(activation[4096:] == 1)):
+				if center['maxLabelID'] == np.argwhere(activation[4096:] == 1):
 					correct += 1
-					correctPerLabel[int(activation[0])] += 1
+					correctPerLabel[np.argwhere(activation[4096:] == 1)] += 1
 				else:
 					wrong += 1
-					wrongPerLabel[int(activation[0])] += 1
+					wrongPerLabel[np.argwhere(activation[4096:] == 1)] += 1
 
 			centerCounter += 1
 
