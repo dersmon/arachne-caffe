@@ -25,8 +25,8 @@ def calculateActivationVectors(trainingDataInfoPath, testDataInfoPath, labelInde
          for line in labelMappingFile:
             labelCount += 1
 
-      ac.activationsToFile(ac.crunchDumpFiles(trainingDataInfoPath, batchSize, batchLimit, labelCount),  "numpy_vectors/" + trainingActivationsPath)
-      ac.activationsToFile(ac.crunchDumpFiles(testDataInfoPath, batchSize, batchLimit, labelCount), "numpy_vectors/" + testActivationsPath)
+      ac.activationsToFile(ac.crunchDumpFiles(trainingDataInfoPath, batchSize, batchLimit, labelCount),trainingActivationsPath)
+      ac.activationsToFile(ac.crunchDumpFiles(testDataInfoPath, batchSize, batchLimit, labelCount), testActivationsPath)
 
 if __name__ == '__main__':
    if(len(sys.argv) != 4):
