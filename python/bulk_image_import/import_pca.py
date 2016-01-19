@@ -5,6 +5,8 @@ import logging
 import sys
 import os
 
+import json
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import modules.arachne_caffe as ac
 
@@ -38,19 +40,24 @@ def meanNormalization(activations):
    # logger.debug(substractedMean[0][0])
    # logger.debug(activations[0][0] - activationMeans[0] == substractedMean[0][0])
    #
-   # logger.debug(activations[0][1])
+   # logger.debug(activations[50][1])
    # logger.debug(activationMeans[1])
-   # logger.debug(substractedMean[0][1])
-   # logger.debug(activations[0][1] - activationMeans[1] == substractedMean[0][1])
+   # logger.debug(substractedMean[50][1])
+   # logger.debug(activations[4500][1] - activationMeans[1] == substractedMean[4500][1])
 
-   standardDeviationMatrix = np.std(substractedMean, 0)
+   standardDeviationMatrix = 1 / np.std(activations, 0)
+   standardDeviationMatrix[standardDeviationMatrix >= 2147483648] = 0
    # logger.debug(standardDeviationMatrix.shape)
+   # logger.debug(standardDeviationMatrix)
 
-   activations = (substractedMean / standardDeviationMatrix)
+
+
+   activations = (substractedMean * standardDeviationMatrix)
    # logger.debug(activations.shape)
 
-   return activations
+   # activations = (activations - np.amin(activations)) / (np.amax(activations) - np.amin(activations))
 
+   return activations
 def calculateCovariance(activations):
 
    logger.info("Calculating covariance...")
@@ -66,25 +73,19 @@ def calculateCovariance(activations):
 
 def calculateEigenvectors(covarianceMatrix):
    logger.info("Calculating eigenvectors...")
-   return np.linalg.svd(covarianceMatrix)
+   return np.linalg.svd(covarianceMatrix, full_matrices=True)
 
 def findOptimalDimensionCount(singularValuesMatrix):
    logger.info("Searching viable dimensions to reduce...")
-   logger.debug(singularValuesMatrix.shape)
 
    k = 1
    while(k < singularValuesMatrix.shape[0]):
       kSum = np.sum(singularValuesMatrix[0:k])
-      nSum = np.sum(singularValuesMatrix)
-
-      # logger.debug(kSum)
-      # logger.debug(nSum)
+      nSum = np.sum(singularValuesMatrix[:])
 
       result = 1 - (kSum/nSum)
-      # logger.debug(kSum/nSum)
-      # logger.debug("Result:")
-      # logger.debug(result)
-      if(result < 0.99):
+      logger.debug(result)
+      if(result > 0.01):
          if(k == 1):
             return k
          return k - 1
@@ -117,14 +118,26 @@ if __name__ == '__main__':
       logger.error("Could not load activations, exiting.")
       sys.exit
 
+   # test = np.zeros(sourceActivations[:,0:SOURCE_DIMENSIONS].shape)
+   # test[:,0:1000] = np.random.rand(test.shape[0],1000)
+   #
+   # logger.debug("Max: " + str(np.amax(test)) + ", min: " + str(np.amin(test)))
+   # activations = meanNormalization(test)
+
+   logger.debug("Max: " + str(np.amax(sourceActivations[:,0:SOURCE_DIMENSIONS])) + ", min: " + str(np.amin(sourceActivations[:,0:SOURCE_DIMENSIONS])))
    activations = meanNormalization(sourceActivations[:,0:SOURCE_DIMENSIONS])
+
+   logger.debug("Max: " + str(np.amax(activations)) + ", min: " + str(np.amin(activations)))
+
 
    if(singularValuesMatrix == None):
 
       covarianceMatrix = calculateCovariance(activations)
+      sys.exit
       unitaryMatrix, singularValuesMatrix, V = calculateEigenvectors(covarianceMatrix)
 
       singularValuesFile = os.path.splitext(sys.argv[1])[0] + "_singular.npy"
+      singularValuesTextFile = os.path.splitext(sys.argv[1])[0] + "_singular.txt"
 
       if not os.path.exists(os.path.dirname(singularValuesFile)):
          os.makedirs(os.path.dirname(singularValuesFile))
@@ -146,10 +159,14 @@ if __name__ == '__main__':
    # # reverse the n first rows of vt
    # # vt[:n, :] = vt[n-1::-1, :]
 
+   # logger.debug(singularValuesMatrix)
+   logger.debug(singularValuesMatrix.shape)
+   logger.debug(unitaryMatrix.shape)
+
    k = findOptimalDimensionCount(singularValuesMatrix)
    logger.info("Optimal k: " + str(k))
 
-   uReduced = unitaryMatrix[:,:k]
+   uReduced = unitaryMatrix[:,0:2048]
    logger.debug(uReduced.shape)
    logger.debug(activations.shape)
    z = np.dot(activations, uReduced)
@@ -160,5 +177,11 @@ if __name__ == '__main__':
    activationsReconstructed = np.dot(uReduced, z.T).T
    logger.debug(activationsReconstructed.shape)
 
-   logger.debug(activations[0:10:0])
-   logger.debug(activationsReconstructed[0:10,0])
+   logger.debug(activations[0,0])
+   logger.debug(activationsReconstructed[0,0])
+
+   logger.debug(activations[4500,0])
+   logger.debug(activationsReconstructed[4500,0])
+
+   logger.debug(activations[2100,2303])
+   logger.debug(activationsReconstructed[2100,2303])
