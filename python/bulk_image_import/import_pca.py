@@ -53,8 +53,35 @@ def calculateEigenvectors(covarianceMatrix):
    logger.info("Calculating eigenvectors...")
    return np.linalg.svd(covarianceMatrix, full_matrices=True)
 
+def getUSV(activations, activationsSourcePath):
+   covarianceMatrix = calculateCovariance(activations)
+   sys.exit
+   unitaryMatrix, singularValuesMatrix, V = calculateEigenvectors(covarianceMatrix)
+
+   singularValuesFile = os.path.splitext(activationsSourcePath)[0] + "_singular.npy"
+
+   if not os.path.exists(os.path.dirname(singularValuesFile)):
+      os.makedirs(os.path.dirname(singularValuesFile))
+   with open(singularValuesFile, "w") as outputFile:
+      np.save(outputFile, singularValuesMatrix)
+
+   unitaryMatrixFile = os.path.splitext(activationsSourcePath)[0] + "_unitary_matrix.npy"
+
+   if not os.path.exists(os.path.dirname(unitaryMatrixFile)):
+      os.makedirs(os.path.dirname(unitaryMatrixFile))
+   with open(unitaryMatrixFile, "w") as outputFile:
+      np.save(outputFile, unitaryMatrix)
+
+   return [unitaryMatrix, singularValuesMatrix, V]
+
+def reduceActivations(unitaryMatrix, activations, k):
+   uReduced = unitaryMatrix[:,0:activations.shape[1]-k]
+   # uReduced = unitaryMatrix[:,0:4000]
+   reducedActivations = np.dot(activations, uReduced)
+   return reducedActivations
+
 def findOptimalDimensionCount(singularValuesMatrix):
-   logger.info("Searching viable dimensions to reduce...")
+   logger.info("Searching viable k dimensions to reduce...")
 
    k = 1
    nSum = np.sum(singularValuesMatrix[:])
@@ -79,14 +106,15 @@ if __name__ == '__main__':
    sourceActivations = None
    singularValuesMatrix = None
    unitaryMatrix = None
-
+   trainingActivationsPath = ''
    if(len(sys.argv) == 1 or len(sys.argv) > 4):
       logger.info("Please provide as arguments:")
       logger.info("1) path to activations as npy file.")
       logger.info("2) path to singular values matrix as npy file (optional)")
       sys.exit
    else:
-      sourceActivations = ac.activationsFromFile(sys.argv[1])
+      trainingActivationsPath = sys.argv[1]
+      sourceActivations = ac.activationsFromFile(trainingActivationsPath)
       if(len(sys.argv) == 4):
          with open(sys.argv[2], 'r') as inputFile:
             singularValuesMatrix = np.load(inputFile)
@@ -97,40 +125,43 @@ if __name__ == '__main__':
       logger.error("Could not load activations, exiting.")
       sys.exit
 
-   logger.debug("Max: " + str(np.amax(sourceActivations[:,0:SOURCE_DIMENSIONS])) + ", min: " + str(np.amin(sourceActivations[:,0:SOURCE_DIMENSIONS])))
+   # logger.debug("Max: " + str(np.amax(sourceActivations[:,0:SOURCE_DIMENSIONS])) + ", min: " + str(np.amin(sourceActivations[:,0:SOURCE_DIMENSIONS])))
    activations = meanNormalization(sourceActivations[:,0:SOURCE_DIMENSIONS])
-
-   logger.debug("Max: " + str(np.amax(activations)) + ", min: " + str(np.amin(activations)) + " (Normalized)")
+   # logger.debug("Max: " + str(np.amax(activations)) + ", min: " + str(np.amin(activations)) + " (Normalized)")
 
 
    if(singularValuesMatrix == None):
+      [unitaryMatrix, singularValuesMatrix, V] = getUSV(activations, trainingActivationsPath)
 
-      covarianceMatrix = calculateCovariance(activations)
-      sys.exit
-      unitaryMatrix, singularValuesMatrix, V = calculateEigenvectors(covarianceMatrix)
-
-      singularValuesFile = os.path.splitext(sys.argv[1])[0] + "_singular.npy"
-
-      if not os.path.exists(os.path.dirname(singularValuesFile)):
-         os.makedirs(os.path.dirname(singularValuesFile))
-      with open(singularValuesFile, "w") as outputFile:
-         np.save(outputFile, singularValuesMatrix)
-
-      unitaryMatrixFile = os.path.splitext(sys.argv[1])[0] + "_unitary_matrix.npy"
-
-      if not os.path.exists(os.path.dirname(unitaryMatrixFile)):
-         os.makedirs(os.path.dirname(unitaryMatrixFile))
-      with open(unitaryMatrixFile, "w") as outputFile:
-         np.save(outputFile, unitaryMatrix)
-
+   V = None
+   activations = None
    k = findOptimalDimensionCount(singularValuesMatrix)
    logger.info("Optimal k: " + str(k))
+   singularValuesMatrix = None
 
-   uReduced = unitaryMatrix[:,0:activations.shape[1]-k]
-   # uReduced = unitaryMatrix[:,0:4000]
-   z = np.dot(activations, uReduced)
+   reduced = reduceActivations(unitaryMatrix, sourceActivations[:,0:SOURCE_DIMENSIONS], k)
+   reduced = np.hstack((reduced, sourceActivations[:,SOURCE_DIMENSIONS:]))
+
+   reducedActivationsPath = os.path.splitext(trainingActivationsPath)[0] + "_reduced_" + str(k) + ".npy"
+   if not os.path.exists(os.path.dirname(reducedActivationsPath)):
+      os.makedirs(os.path.dirname(reducedActivationsPath))
+   with open(reducedActivationsPath, "w") as outputFile:
+      np.save(outputFile, reduced)
+
+   testActivationsPath = sys.argv[1].replace('train', 'test')
+   sourceActivations = ac.activationsFromFile(testActivationsPath)
+
+   reduced = reduceActivations(unitaryMatrix, sourceActivations[:,0:SOURCE_DIMENSIONS], k)
+   reduced = np.hstack((reduced, sourceActivations[:,SOURCE_DIMENSIONS:]))
+
+   reducedActivationsPath = os.path.splitext(testActivationsPath)[0] + "_reduced_" + str(k) + ".npy"
+   if not os.path.exists(os.path.dirname(reducedActivationsPath)):
+      os.makedirs(os.path.dirname(reducedActivationsPath))
+   with open(reducedActivationsPath, "w") as outputFile:
+      np.save(outputFile, reduced)
+
    #
-   # activationsReconstructed = np.dot(uReduced, z.T).T
+   # activationsReconstructed = np.dot(uReduced, reducedActivations.T).T
    #
    # logger.debug(np.allclose(activations, activationsReconstructed))
    # logger.debug(np.sum(activations))
