@@ -12,16 +12,23 @@ logger.setLevel(logging.DEBUG)
 def plotActivations(activations, labelCount):
 
    firstLabelIndex = activations.shape[1] - labelCount
-
-   logger.debug(firstLabelIndex)
+   activationsPerLabel = 1024 / labelCount
+   logger.info(str(activationsPerLabel) + " pixel per label.")
 
    labels = np.array(activations)[:,firstLabelIndex:]
    selection = np.empty((0, activations.shape[1]))
+   
+   tickLabels = []
 
    labelCounter = 0
    while labelCounter < labels.shape[1]:
-      subSelection = activations[np.logical_or.reduce([activations[:,firstLabelIndex+labelCounter] == 1])][0:100,:]
+      picked = np.random.randint(0,activations.shape[0],2)
+      monoLabelSelection = activations[np.logical_or.reduce([activations[:,firstLabelIndex+labelCounter] == 1])]
+      picked = np.random.randint(0,monoLabelSelection.shape[0],activationsPerLabel)
+      subSelection = monoLabelSelection[picked]
       selection = np.vstack((selection, subSelection))
+
+      tickLabels.append("Label " + str(labelCounter))
       labelCounter += 1
 
    scaled = selection[:,0:firstLabelIndex].reshape(selection.shape[0],4,1024)
@@ -30,6 +37,11 @@ def plotActivations(activations, labelCount):
    scaled = scaled * (255 / maxValue)
 
    plt.imshow(scaled, 'Greys_r', interpolation='none')
+   ticks = np.arange(activationsPerLabel * 0.5,selection.shape[0],activationsPerLabel)
+
+   ax.set_yticks(ticks)
+   ax.set_yticklabels(tickLabels)
+
    plt.show()
 
 if __name__ == '__main__':
