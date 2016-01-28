@@ -28,8 +28,8 @@ def getImages(rootPath, label):
 
 def writeInfoFile(rootPath, images):
    nthTest = 5
-   trainInfoPath = rootPath + '/label_index_train_info.txt'
-   testInfoPath = rootPath + '/label_index_test_info.txt'
+   trainInfoPath = rootPath + '/label_index_info_train.txt'
+   testInfoPath = rootPath + '/label_index_info_test.txt'
    if not os.path.exists(os.path.dirname(trainInfoPath)):
       os.makedirs(os.path.dirname(trainInfoPath))
 
