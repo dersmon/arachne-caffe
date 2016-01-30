@@ -8,30 +8,46 @@ logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-def getLabels(rootPath):
+def subFolders(rootPath):
    labels = []
    for directory, _, files in os.walk(rootPath):
       if os.path.basename(directory) == "":
          continue
 
       labels.append(os.path.basename(directory))
+
+   labels.sort()
    return labels
 
-def getImages(rootPath, label):
-   imageFolder = rootPath + "/" + label
+def getImages(rootPath, folder, hierarchy):
+   imageFolder = rootPath + "/" + folder
+   label = ''
+   if hierarchy == 0:
+      label = folder
+   elif hierarchy == 1:
+      label = folder.split('_')[0]
 
-   images = {'label':label, 'files':[]}
+   images = {'label':label, 'folder':folder, 'files':[]}
+
    for directory, _, files in os.walk(imageFolder):
       images['files'] = files
 
    return images
 
-def writeInfoFile(rootPath, images):
+def writeInfoFile(rootPath, images, uniqueLabels):
    nthTest = 5
-   trainInfoPath = rootPath + '/label_index_info_train.txt'
-   testInfoPath = rootPath + '/label_index_info_test.txt'
+   trainInfoPath = rootPath + '/label_index_info_train_' + str(hierarchy) +'.txt'
+   testInfoPath = rootPath + '/label_index_info_test_' + str(hierarchy) +'.txt'
    if not os.path.exists(os.path.dirname(trainInfoPath)):
       os.makedirs(os.path.dirname(trainInfoPath))
+
+   labels = []
+
+   for image in images:
+      labels.append(image['label'])
+
+   # logger.debug(labels)
+
 
    with open(trainInfoPath, 'a') as trainOutput:
       with open(testInfoPath, 'a') as testOutput:
@@ -42,9 +58,9 @@ def writeInfoFile(rootPath, images):
 
                imagePath = rootPath + "/" + category['label'] + "/" + image
                if imageCounter % 5 == 0:
-                  testOutput.write(imagePath + ' ' + str(categoryCounter) + '\n')
+                  testOutput.write(imagePath + ' ' + str(uniqueLabels.index(labels[categoryCounter])) + '\n')
                else:
-                  trainOutput.write(imagePath + ' ' + str(categoryCounter) + '\n')
+                  trainOutput.write(imagePath + ' ' + str(uniqueLabels.index(labels[categoryCounter])) + '\n')
 
                imageCounter += 1
 
@@ -56,6 +72,7 @@ def writeInfoFile(rootPath, images):
 if __name__ == '__main__':
 
    rootPath = ''
+   hierarchy = 1
 
    if(len(sys.argv) != 2):
       logger.info("Please provide as argument:")
@@ -64,23 +81,31 @@ if __name__ == '__main__':
    else:
       rootPath = sys.argv[1]
 
-   labels = getLabels(rootPath)
+   subFolders = subFolders(rootPath)
 
-   indexLabelMappingPath = rootPath + '/label_index_mapping.txt'
+   images = []
+   for folder in subFolders:
+      images.append(getImages(rootPath , folder, 1))
+
+   uniqueLabels = []
+   for image in images:
+      uniqueLabels.append(image['label'])
+
+   uniqueLabels = list(set(uniqueLabels))
+   uniqueLabels.sort()
+   logger.debug(uniqueLabels)
+
+   indexLabelMappingPath = rootPath + '/label_index_mapping_' + str(hierarchy) +'.txt'
    if not os.path.exists(os.path.dirname(indexLabelMappingPath)):
       os.makedirs(os.path.dirname(indexLabelMappingPath))
 
    with open(indexLabelMappingPath, 'a') as output:
-      for index, value in enumerate(labels):
+      for index, value in enumerate(uniqueLabels):
          output.write(value + ' ' + str(index) + '\n')
 
-   images = []
-   for label in labels:
-      images.append(getImages(rootPath, label))
 
-   [trainingInfo, testInfo] = writeInfoFile(rootPath, images)
+   [trainingInfo, testInfo] = writeInfoFile(rootPath, images, uniqueLabels)
    exportName = os.path.dirname(rootPath)
-   itm.calculateActivationVectors(trainingInfo, testInfo, indexLabelMappingPath, './numpy_vectors/' + exportName + '_train.npy', './numpy_vectors/' + exportName + '_test.npy')
+   exportName = exportName.split('/')[len(exportName.split('/')) - 1]
 
-   # ac.activationsToFile(ac.crunchDumpFiles(trainingInfo, 100, 0, len(labels)), './numpy_vectors/handwritten_125_train.npy')
-   # ac.activationsToFile(ac.crunchDumpFiles(testInfo, 100, 0, len(labels)), './numpy_vectors/handwritten__125_test.npy')
+   itm.calculateActivationVectors(trainingInfo, testInfo, indexLabelMappingPath, './numpy_vectors/' + exportName + '_train_' + str(hierarchy) +'.npy', './numpy_vectors/' + exportName + '_test_' + str(hierarchy) +'.npy')
