@@ -1,8 +1,8 @@
 import sys
 import os
 import logging
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-import modules.arachne_caffe as ac
+
+import import_to_numpy as itm
 
 logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -79,6 +79,8 @@ if __name__ == '__main__':
       images.append(getImages(rootPath, label))
 
    [trainingInfo, testInfo] = writeInfoFile(rootPath, images)
+   exportName = os.path.dirname(rootPath)
+   itm.calculateActivationVectors(trainingInfo, testInfo, indexLabelMappingPath, './numpy_vectors/' + exportName + '_train.npy', './numpy_vectors/' + exportName + '_test.npy')
 
-   ac.activationsToFile(ac.crunchDumpFiles(trainingInfo, 100, 0, len(labels)), './numpy_vectors/handwritten_125_train.npy')
-   ac.activationsToFile(ac.crunchDumpFiles(testInfo, 100, 0, len(labels)), './numpy_vectors/handwritten__125_test.npy')
+   # ac.activationsToFile(ac.crunchDumpFiles(trainingInfo, 100, 0, len(labels)), './numpy_vectors/handwritten_125_train.npy')
+   # ac.activationsToFile(ac.crunchDumpFiles(testInfo, 100, 0, len(labels)), './numpy_vectors/handwritten__125_test.npy')
