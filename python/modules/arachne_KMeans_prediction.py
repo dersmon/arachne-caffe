@@ -9,14 +9,14 @@ logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-def kMeans(activationVectors, labelCount, maxIterations):
+def kMeans(activationVectors, clusterCount, maxIterations):
 
 	centers = []
 	count = 0
 	running = 1
 
 	# Initialize empty cluster centers.
-	while count < labelCount:
+	while count < clusterCount:
 		centers.append({'position':random.choice(activationVectors)[0:4096], 'clusterMembers': []})
 		count += 1
 
@@ -61,7 +61,7 @@ def kMeansIteration(centers, activations):
 		# logger.debug(activations[:,0:4096].shape)
 		centerDistances = []
 		batchCount = 0
-		batchSize = 4000
+		batchSize = 10000
 
 		while(batchCount < len(activations)):
 			differences = (activations[batchCount:(batchCount+batchSize),0:4096] - center['position']).T
@@ -78,13 +78,13 @@ def kMeansIteration(centers, activations):
 
 	distances = np.array(distances)
 
-	logger.debug("Complete: ")
-	logger.debug(len(distances))
-	logger.debug(distances[0].shape)
+	# logger.debug("Complete: ")
+	# logger.debug(len(distances))
+	# logger.debug(distances[0].shape)
 
 	minDistanceIndex = np.argmin(distances, axis=0)
 	# logger.debug(minDistanceIndex)
-	logger.debug(np.unique(minDistanceIndex))
+	# logger.debug(np.unique(minDistanceIndex))
 	# (4105,) = minDistanceIndex.shape, each value is index of cluster nearest to value
 
 	counter = 0
@@ -161,41 +161,62 @@ def clusterAnalysis(clusters, training, labelCount):
 
 	return analysedCluster
 
-def clusterTest(clusters, testVectors, labelCount):
+def clusterTest(clusters, testVectors):
 
-	tempCenters = []
-	updatedCenters = []
+    labelCount = len(testVectors[0][4096:])
+    tempCenters = []
+    updatedCenters = []
+    correct = 0
+    wrong = 0
 
-	correct = 0
-	wrong = 0
+    correctRanked = 0
+    wrongRanked = 0
 
-	correctPerLabel = [0] * labelCount
-	wrongPerLabel = [0] * labelCount
-
-	for activation in testVectors:
-
-		distances = []
+    correctPerLabel = [0] * labelCount
+    wrongPerLabel = [0] * labelCount
+    for activation in testVectors:
+        distances = []
 
 		# Calculate distance to centers
-		for center in clusters:
+        for center in clusters:
 			difference = center['position'] - activation[0:4096]
 			distances.append(np.linalg.norm(difference))
 
-		centerCounter = 0
-		for center in clusters:
-			if centerCounter == np.argmin(distances):
-				if center['maxLabelID'] == np.argwhere(activation[4096:] == 1):
-					correct += 1
-					correctPerLabel[np.argwhere(activation[4096:] == 1)] += 1
-				else:
-					wrong += 1
-					wrongPerLabel[np.argwhere(activation[4096:] == 1)] += 1
+		# logger.debug(distances)
+		# logger.debug(np.argsort(distances))
 
-			centerCounter += 1
+        sortedIndices = np.argsort(distances)
 
-	print 'correct: ' + str(correct) + ', wrong: ' + str(wrong) + ', ratio: ' + str(float(correct)/(wrong + correct))
-	print 'correct per label: ' + str(correctPerLabel)
-	print 'wrong per label: ' + str(wrongPerLabel)
+        centerCounter = 0
+        if clusters[sortedIndices[0]]['maxLabelID'] == np.argwhere(activation[4096:] == 1):
+			correct += 1
+			correctPerLabel[np.argwhere(activation[4096:] == 1)] += 1
+        else:
+			wrong += 1
+			wrongPerLabel[np.argwhere(activation[4096:] == 1)] += 1
+
+        maxLabel = 0
+        sumCorrectLabel = 0
+
+		# logger.debug(clusters[sortedIndices[0]]['labelDistribution'])
+
+        # Mean average precision?
+        for idx, labelCount in enumerate(clusters[sortedIndices[0]]['labelDistribution']):
+            if labelCount > maxLabel:
+                maxLabel = labelCount
+            if(idx == np.argwhere(activation[4096:] == 1)):
+				sumCorrectLabel += labelCount
+
+        correctRanked += (float(sumCorrectLabel) / maxLabel)
+
+
+    logger.info('Exact prediction:')
+    logger.info('correct: ' + str(correct) + ', wrong: ' + str(wrong) + ', ratio: ' + str(float(correct)/(wrong + correct)))
+    logger.info('correct per label: ' + str(correctPerLabel))
+    logger.info('wrong per label: ' + str(wrongPerLabel))
+
+    logger.info('Correct ranked: ')
+    logger.info(correctRanked / len(testVectors))
 
 def multipleClustersPerLabel(activationVectors, labelNumber, clusterCount):
 

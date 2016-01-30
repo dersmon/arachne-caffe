@@ -13,6 +13,9 @@ logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+saveFile = "./clusters_factor_2000.npy"
+
+
 def drawVectors(vectors):
 	labels = np.array(vectors)[:,4096:]
 	grid = np.array(vectors)[:,0:4096]
@@ -65,38 +68,39 @@ def testKNN(training, test, labelCount):
 	plt.show()
 
 def calculateKMeans(training, labelCount):
+	factor = (len(training) / 2000)
+	if factor < 1:
+		factor = 1
 
-	clusterCount = labelCount * 3
+	clusterCount = labelCount * 0.5
 
-	filePath = "./clusters.npy"
+
 	clusters = None
 	clusters = akmp.kMeans(training, clusterCount, 150)
 
-	# print 'Writing file ' + filePath
-	# if not os.path.exists(os.path.dirname(filePath)):
-	# 	os.makedirs(os.path.dirname(filePath))
-	# with open(filePath, "w") as outputFile:
-	# 	np.save(outputFile, clusters)
+	print 'Writing file ' + saveFile
+	if not os.path.exists(os.path.dirname(saveFile)):
+		os.makedirs(os.path.dirname(saveFile))
+	with open(saveFile, "w") as outputFile:
+		np.save(outputFile, clusters)
 
 	# with open("clusters.npy", 'r') as inputFile:
 	# 	clusters = np.load(inputFile)
 
 	clusters = akmp.clusterAnalysis(clusters, training, labelCount)
 
-	print 'Writing file ' + filePath
-	if not os.path.exists(os.path.dirname(filePath)):
-		os.makedirs(os.path.dirname(filePath))
-	with open(filePath, "w") as outputFile:
+	print 'Writing file ' + saveFile
+	if not os.path.exists(os.path.dirname(saveFile)):
+		os.makedirs(os.path.dirname(saveFile))
+	with open(saveFile, "w") as outputFile:
 		np.save(outputFile, clusters)
 
 
+def testKMeans(test):
 
-def testKMeans(test, labelCount):
-
-	with open("clusters.npy", 'r') as inputFile:
+	with open(saveFile, 'r') as inputFile:
 		clusters = np.load(inputFile)
-
-		akmp.clusterTest(clusters, test, labelCount)
+		akmp.clusterTest(clusters, test)
 
 trainingActivationsPath = ""
 testActivationsPath = ""
@@ -119,13 +123,7 @@ if trainingActivationsPath.endswith('.npy'):
 else:
 	print(trainingActivationsPath + " does not seem to be a npy-file with activations.")
 
-
-
 labelCount = len(trainingActivations[0][4096:])
-
-#drawVectors(trainingActivationVectors)
-
-#testKNN(trainingActivations, testActivations, labelCount)
 
 calculateKMeans(trainingActivations, labelCount)
 
@@ -134,4 +132,4 @@ if testActivationsPath.endswith('.npy'):
 else:
 	print(testActivations + " does not seem to be a npy-file with activations.")
 
-testKMeans(testActivations, labelCount )
+testKMeans(testActivations)

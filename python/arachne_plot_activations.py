@@ -58,6 +58,7 @@ def plotActivations(activations, labelCount, indexLabelMappingPath):
    ax.set_yticks(ticks)
    ax.set_yticklabels(tickLabels)
 
+   plt.savefig('plot.pdf')
    plt.show()
 
 if __name__ == '__main__':

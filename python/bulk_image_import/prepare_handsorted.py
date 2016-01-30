@@ -36,8 +36,8 @@ def getImages(rootPath, folder, hierarchy):
 
 def writeInfoFile(rootPath, images, uniqueLabels):
    nthTest = 5
-   trainInfoPath = rootPath + '/label_index_info_train_' + str(hierarchy) +'.txt'
-   testInfoPath = rootPath + '/label_index_info_test_' + str(hierarchy) +'.txt'
+   trainInfoPath = rootPath + 'label_index_info_train_' + str(hierarchy) +'.txt'
+   testInfoPath = rootPath + 'label_index_info_test_' + str(hierarchy) +'.txt'
    if not os.path.exists(os.path.dirname(trainInfoPath)):
       os.makedirs(os.path.dirname(trainInfoPath))
 
@@ -56,7 +56,7 @@ def writeInfoFile(rootPath, images, uniqueLabels):
             imageCounter = 0
             for image in category['files']:
 
-               imagePath = rootPath + "/" + category['label'] + "/" + image
+               imagePath = rootPath + category['folder'] + "/" + image
                if imageCounter % 5 == 0:
                   testOutput.write(imagePath + ' ' + str(uniqueLabels.index(labels[categoryCounter])) + '\n')
                else:

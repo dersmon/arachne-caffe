@@ -3,6 +3,7 @@ webdemo/bootstrap/*
 *.pyc
 examples/dump_configs/elastic/*.json
 examples/images/*
-examples/trained_models/
+*.binaryproto
+*.caffemodel
 image_dumps/
 numpy_vectors/
