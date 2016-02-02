@@ -8,15 +8,8 @@ logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-trainingDataInfoPath = 'label_index_info_train.txt'
-testDataInfoPath = 'label_index_info_test.txt'
-labelIndexMappingPath = 'label_index_mapping.txt'
-
-trainingActivationsPath = './training.npy'
-testActivationsPath = './test.npy'
-
 batchSize = 200 # how many images to feed to to caffe as one batch
-batchLimit = 0  # optional, how many batches should be processed (0 = until no more images)
+batchLimit = 0  # optional, how many batches should be processed (0 = until there are no more images)
 
 def calculateActivationVectors(trainingDataInfoPath, testDataInfoPath, labelIndexMappingPath, trainingActivationsPath, testActivationsPath):
 
@@ -29,17 +22,19 @@ def calculateActivationVectors(trainingDataInfoPath, testDataInfoPath, labelInde
       ac.activationsToFile(ac.crunchDumpFiles(testDataInfoPath, batchSize, batchLimit, labelCount), testActivationsPath)
 
 if __name__ == '__main__':
-   if(len(sys.argv) != 4):
+   if(len(sys.argv) != 6):
       logger.info("Please provide as arguments:")
-      logger.info("1) path to dump root directory as argv[1]")
-      logger.info("2) filename training numpy data as argv[2]")
-      logger.info("3) filename test numpy data as argv[3]")
+      logger.info("1) path to label_info_training.txt as argv[1]")
+      logger.info("2) path to label_info_test.txt as argv[2]")
+      logger.info("3) path to label_index_mapping.txt as argv[3]")
+      logger.info("4) target-filename for training data (*.npy) as argv[4]")
+      logger.info("5) target-filename for test data (*.npy) as argv[5]")
       sys.exit
    else:
-      trainingDataInfoPath = sys.argv[1] + trainingDataInfoPath
-      testDataInfoPath = sys.argv[1] + testDataInfoPath
-      labelIndexMappingPath = sys.argv[1] + labelIndexMappingPath
-      trainingActivationsPath = "./" + sys.argv[2]
-      testActivationsPath = "./" + sys.argv[3]
+      trainingDataInfoPath = sys.argv[1]
+      testDataInfoPath = sys.argv[2]
+      labelIndexMappingPath = sys.argv[3]
+      trainingActivationsPath = sys.argv[4]
+      testActivationsPath = sys.argv[5]
 
    calculateActivationVectors(trainingDataInfoPath, testDataInfoPath, labelIndexMappingPath, trainingActivationsPath, testActivationsPath)
