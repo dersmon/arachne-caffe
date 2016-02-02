@@ -14,12 +14,6 @@ def sendQuery(url, asJson):
    logging.debug('Query: ' + url + ', returning as json: ' + str(asJson))
    try:
       url = urllib2.quote(url.encode('utf8'), '/:"&=?')
-
-      auth_handler = urllib2.HTTPBasicAuthHandler()
-      auth_handler.add_password(None, uri=(host + url), user='user', passwd='passwd')
-      opener = urllib2.build_opener(auth_handler)
-
-      urllib2.install_opener(opener)
       result = urllib2.urlopen(host + url)
 
       logger.debug(result)
