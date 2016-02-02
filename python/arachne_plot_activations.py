@@ -7,8 +7,7 @@ import modules.arachne_caffe as ac
 
 logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
+logger.setLevel(logging.INFO)
 
 def getLabelStrings(filePath):
    with open(filePath, 'r') as inputFile:
@@ -18,9 +17,7 @@ def getLabelStrings(filePath):
 
    return result
 
-
-
-def plotActivations(activations, labelCount, indexLabelMappingPath):
+def plotActivations(activations, labelCount, indexLabelMappingPath, plotFileName):
 
    firstLabelIndex = activations.shape[1] - labelCount
    activationsPerLabel = 1024 / labelCount
@@ -42,7 +39,6 @@ def plotActivations(activations, labelCount, indexLabelMappingPath):
       tickLabels.append("Label " + str(labelCounter))
       labelCounter += 1
 
-
    if indexLabelMappingPath != None:
        tickLabels = getLabelStrings(indexLabelMappingPath)
 
@@ -58,7 +54,7 @@ def plotActivations(activations, labelCount, indexLabelMappingPath):
    ax.set_yticks(ticks)
    ax.set_yticklabels(tickLabels)
 
-   plt.savefig('plot.pdf')
+   plt.savefig(plotFileName)
    plt.show()
 
 if __name__ == '__main__':
@@ -68,9 +64,9 @@ if __name__ == '__main__':
    activationsPath = ""
    if len(sys.argv) != 3 and len(sys.argv) != 4:
       logger.info("Please provide as argument:")
-      logger.info("1) npy-file with activations as.")
+      logger.info("1) npy-file with activations.")
       logger.info("2) The the number of neurons.")
-      logger.info("3) The path to the index label mapping (optional)")
+      logger.info("3) The path to the index label mapping (optional).")
       sys.exit()
 
    activationsPath = sys.argv[1]
@@ -82,4 +78,4 @@ if __name__ == '__main__':
    activations = ac.activationsFromFile(activationsPath)
 
    labelCount = activations[0,neurons:].shape[0]
-   plotActivations(activations, labelCount, indexLabelMappingPath)
+   plotActivations(activations, labelCount, indexLabelMappingPath, os.path.splitext(activationsPath)[0] + '_plot.pdf')
