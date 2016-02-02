@@ -10,9 +10,9 @@ import import_statistics
 import base64
 
 
-limitEntityQuery = 10
+limitEntityQuery = 1000
 
-imagePerEntity = 15
+imagePerEntity = 200
 labelMapping = []
 targetPath = './image_dumps/'
 harvestingTest = False
@@ -178,8 +178,8 @@ def streamFiles(exportFolder, dictionary, labelMapping):
    else:
       logger.info('Skipping image downloads. Just writing index info files.')
 
-   trainingInfoPath = exportFolder + '/label_index_info_train.txt'
-   testInfoPath = exportFolder + '/label_index_info_test.txt'
+   trainingInfoPath = exportFolder + 'label_info_training.txt'
+   testInfoPath = exportFolder + 'label_info_training.txt'
 
    for imageId, label in dictionary.items():
 
