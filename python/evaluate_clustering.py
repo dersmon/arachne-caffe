@@ -37,11 +37,11 @@ def testKNN(training, test, labelCount):
 		data.append([count, float(correct)/(wrong + correct)])
 		count += 1
 		if((count + 1) % 100 == 0):
-			print 'Calculated prediction for ' + str(count + 1) + ' nearest neighbours.'
+			logger.info('Calculated prediction for ' + str(count + 1) + ' nearest neighbours.')
 
-		print str(correct) + ", " + str(wrong) + ", " + str(float(correct)/(wrong + correct))
+		logger.info(str(correct) + ", " + str(wrong) + ", " + str(float(correct)/(wrong + correct)))
 
-	print 'Calculated prediction for ' + str(count) + ' nearest neighbours.'
+	logger.info('Calculated prediction for ' + str(count) + ' nearest neighbours.')
 	data = np.array(data)
 
 	plt.plot(data[:,0], data[:,1], 'k')
@@ -60,7 +60,7 @@ def calculateKMeans(training, labelCount):
 	clusters = None
 	clusters = akmp.kMeans(training, clusterCount, 150)
 
-	print 'Writing file ' + saveFile
+	logger.info('Writing file ' + saveFile)
 	if not os.path.exists(os.path.dirname(saveFile)):
 		os.makedirs(os.path.dirname(saveFile))
 	with open(saveFile, "w") as outputFile:
@@ -71,7 +71,7 @@ def calculateKMeans(training, labelCount):
 
 	clusters = akmp.clusterAnalysis(clusters, training, labelCount)
 
-	print 'Writing file ' + saveFile
+	logger.info('Writing file ' + saveFile)
 	if not os.path.exists(os.path.dirname(saveFile)):
 		os.makedirs(os.path.dirname(saveFile))
 	with open(saveFile, "w") as outputFile:
@@ -91,19 +91,19 @@ trainingActivations = None
 testActivations = None
 
 if(len(sys.argv) < 2):
-	print("No activation vectors provided.")
+	logger.error("No training activations provided.")
 else:
 	trainingActivationsPath = sys.argv[1]
 
 if(len(sys.argv) < 3):
-	print("No activation vectors provided.")
+	logger.error("No test activations provided.")
 else:
 	testActivationsPath = sys.argv[2]
 
 if trainingActivationsPath.endswith('.npy'):
 	trainingActivations = ac.activationsFromFile(trainingActivationsPath)
 else:
-	print(trainingActivationsPath + " does not seem to be a npy-file with activations.")
+	logger.error(trainingActivationsPath + " does not seem to be a npy-file with activations.")
 
 labelCount = len(trainingActivations[0][4096:])
 
@@ -112,6 +112,6 @@ calculateKMeans(trainingActivations, labelCount)
 if testActivationsPath.endswith('.npy'):
 	testActivations = ac.activationsFromFile(testActivationsPath)
 else:
-	print(testActivations + " does not seem to be a npy-file with activations.")
+	logger.error(testActivations + " does not seem to be a npy-file with activations.")
 
 testKMeans(testActivations)
