@@ -15,24 +15,6 @@ logger.setLevel(logging.DEBUG)
 
 saveFile = "./clusters_factor_2000.npy"
 
-
-def drawVectors(vectors):
-	labels = np.array(vectors)[:,4096:]
-	grid = np.array(vectors)[:,0:4096]
-
-	maxValue = np.amax(grid)
-	minValue = np.amin(grid)
-
-	# print 'max activation: ' + str(maxValue) + ', min activation: ' + str(minValue)
-
-	scaled = grid * (255 / maxValue)
-	#
-	# scaled = scaled.reshape(scaled.shape[0],4,1024)
-	# scaled = scaled.mean(axis=1)
-
-	plt.imshow(scaled, 'Greys_r', interpolation='none')
-	plt.show()
-
 def testKNN(training, test, labelCount):
 	filePath = "./neighbours_elastic.npy"
 	testNeighbours = aknnp.nearestNeighbours(training, test, 50)

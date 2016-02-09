@@ -26,7 +26,7 @@ def evaluateImageBatch(imagePaths):
 	#PRETRAINED = caffe_root + 'models/placesCNN/places205CNN_iter_300000.caffemodel'
 
 	MODEL_FILE = root + 'examples/trained_models/hybrid_cnn_handsorted/hybridCNN_deploy.prototxt'
-	PRETRAINED = root + 'examples/trained_models/hybrid_cnn_handsorted/hybridCNN_handsorted_iter_500.caffemodel'
+	PRETRAINED = root + 'examples/trained_models/hybrid_cnn_handsorted/hybridCNN_handsorted_iter_18000.caffemodel'
 
 	net = caffe.Net(MODEL_FILE, PRETRAINED, caffe.TEST)
 	caffe.set_mode_cpu()
@@ -55,7 +55,7 @@ def evaluateImageBatch(imagePaths):
 	# logger.info("Predicted class is #{}.".format(out['prob'][0].argmax()))
 
 	# load labels
-	imagenet_labels_filename = root + 'image_dumps/handsorted/label_index_mapping_komplett.txt'
+	imagenet_labels_filename = root + 'image_dumps/handsorted/label_index_mapping_0.txt'
 
 	labels = np.loadtxt(imagenet_labels_filename, str, delimiter='\s')
 
@@ -100,12 +100,9 @@ if __name__ == '__main__':
 					imageBatchCount += 1
 					imagePaths.append([])
 
-	logger.debug(imagePaths)
 	result = []
 	for batch in imagePaths:
 		result.extend(evaluateImageBatch(batch))
-
-	logger.debug(str(result))
 
 	resultJSON = json.dumps(result)
 
