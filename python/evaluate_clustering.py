@@ -13,17 +13,17 @@ logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-saveFile = "./clusters_factor_2000.npy"
+saveFile = "./clusters_handsorted_quadrupeled_centers_2.npy"
 
 def testKNN(training, test, labelCount):
-	filePath = "./neighbours_elastic.npy"
+	# filePath = "./neighbours_elastic.npy"
 	testNeighbours = aknnp.nearestNeighbours(training, test, 50)
 
-	print 'Writing file ' + filePath
-	if not os.path.exists(os.path.dirname(filePath)):
-		os.makedirs(os.path.dirname(filePath))
-	with open(filePath, "w") as outputFile:
-		np.save(outputFile, testNeighbours)
+	# print 'Writing file ' + filePath
+	# if not os.path.exists(os.path.dirname(filePath)):
+	# 	os.makedirs(os.path.dirname(filePath))
+	# with open(filePath, "w") as outputFile:
+	# 	np.save(outputFile, testNeighbours)
 
 	# with open(filePath, 'r') as inputFile:
 	# 	testNeighbours = np.load(inputFile)
@@ -50,13 +50,8 @@ def testKNN(training, test, labelCount):
 	plt.show()
 
 def calculateKMeans(training, labelCount):
-	factor = (len(training) / 2000)
-	if factor < 1:
-		factor = 1
 
-	clusterCount = labelCount * 0.5
-
-
+	clusterCount = labelCount * 4
 	clusters = None
 	clusters = akmp.kMeans(training, clusterCount, 150)
 
@@ -66,7 +61,7 @@ def calculateKMeans(training, labelCount):
 	with open(saveFile, "w") as outputFile:
 		np.save(outputFile, clusters)
 
-	# with open("clusters.npy", 'r') as inputFile:
+	# with open(saveFile, 'r') as inputFile:
 	# 	clusters = np.load(inputFile)
 
 	clusters = akmp.clusterAnalysis(clusters, training, labelCount)
@@ -77,12 +72,15 @@ def calculateKMeans(training, labelCount):
 	with open(saveFile, "w") as outputFile:
 		np.save(outputFile, clusters)
 
+	return clusters
 
-def testKMeans(test):
 
-	with open(saveFile, 'r') as inputFile:
-		clusters = np.load(inputFile)
-		akmp.clusterTest(clusters, test)
+def testKMeans(test, clusters):
+
+	# with open(saveFile, 'r') as inputFile:
+	# 	clusters = np.load(inputFile)
+
+   akmp.clusterTest(clusters, test)
 
 trainingActivationsPath = ""
 testActivationsPath = ""
@@ -107,11 +105,11 @@ else:
 
 labelCount = len(trainingActivations[0][4096:])
 
-calculateKMeans(trainingActivations, labelCount)
+clusters = calculateKMeans(trainingActivations, labelCount)
 
 if testActivationsPath.endswith('.npy'):
 	testActivations = ac.activationsFromFile(testActivationsPath)
 else:
 	logger.error(testActivations + " does not seem to be a npy-file with activations.")
 
-testKMeans(testActivations)
+testKMeans(testActivations, clusters)

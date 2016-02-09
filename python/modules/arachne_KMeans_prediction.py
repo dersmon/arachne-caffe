@@ -7,7 +7,7 @@ from multiprocessing import Process, Queue, current_process, freeze_support
 
 logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 def kMeans(activationVectors, clusterCount, maxIterations):
 
@@ -138,192 +138,229 @@ def kMeansIteration(centers, activations):
 	return updatedCenters
 
 def clusterAnalysis(clusters, training, labelCount):
+   analysedCluster = []
+   counter = 0
+   for cluster in clusters:
+      logger.info('Cluster ' + str(counter) + ', labels:')
+      labelFlags = [training[i,4096:] for i in cluster['clusterMembers']]
+      maxLabelId = -1
+      labelDistribution = [0] * labelCount
+      logger.debug(labelFlags)
+      labelIndices = np.where(np.array(labelFlags[:]) == 1)
+      if len(labelFlags) != 0:
+         logger.debug(labelIndices[1])
+         for index in labelIndices[1]:
+            labelDistribution[index] += 1
 
-	analysedCluster = []
-	counter = 0
-	for cluster in clusters:
-		logger.info('Cluster ' + str(counter) + ', labels:')
-		labelFlags = [training[i,4096:] for i in cluster['clusterMembers']]
+         logger.info(labelDistribution)
+         maxLabelId = np.argmax(labelDistribution)
 
-		labelDistribution = [0] * labelCount
-		# logger.debug(labelFlags)
-		labelIndices = np.where(np.array(labelFlags[:]) == 1)
-		# logger.debug(labelIndices[1])
+      analysedCluster.append({'position': cluster['position'], 'maxLabelID': maxLabelId, 'memberLabelIDs': labelIndices, 'labelDistribution': labelDistribution})
+      counter += 1
 
-		for index in labelIndices[1]:
-			labelDistribution[index] += 1
-
-		logger.info(labelDistribution)
-		maxLabelId = np.argmax(labelDistribution)
-
-		analysedCluster.append({'position': cluster['position'], 'maxLabelID': maxLabelId, 'memberLabelIDs': labelIndices, 'labelDistribution': labelDistribution})
-		counter += 1
-
-	return analysedCluster
+   return analysedCluster
 
 def clusterTest(clusters, testVectors):
 
-    labelCount = len(testVectors[0][4096:])
-    tempCenters = []
-    updatedCenters = []
-    correct = 0
-    wrong = 0
+   labelCount = len(testVectors[0][4096:])
+   tempCenters = []
+   updatedCenters = []
 
-    correctRanked = 0
-    wrongRanked = 0
+   correct = 0
+   wrong = 0
 
-    correctPerLabel = [0] * labelCount
-    wrongPerLabel = [0] * labelCount
-    for activation in testVectors:
-        distances = []
+   correctRanked = 0
+   wrongRanked = 0
 
-		# Calculate distance to centers
-        for center in clusters:
-			difference = center['position'] - activation[0:4096]
-			distances.append(np.linalg.norm(difference))
+   correctPerLabel = [0] * labelCount
+   wrongPerLabel = [0] * labelCount
 
-		# logger.debug(distances)
-		# logger.debug(np.argsort(distances))
+   meanAveragePrecision = 0
+   for activation in testVectors:
+      distances = []
 
-        sortedIndices = np.argsort(distances)
+      # Calculate distance to centers
+      for center in clusters:
+         difference = center['position'] - activation[0:4096]
+         distances.append(np.linalg.norm(difference))
 
-        centerCounter = 0
-        if clusters[sortedIndices[0]]['maxLabelID'] == np.argwhere(activation[4096:] == 1):
-			correct += 1
-			correctPerLabel[np.argwhere(activation[4096:] == 1)] += 1
-        else:
-			wrong += 1
-			wrongPerLabel[np.argwhere(activation[4096:] == 1)] += 1
+         # logger.debug(distances)
+         # logger.debug(np.argsort(distances))
 
-        maxLabel = 0
-        sumCorrectLabel = 0
+      sortedIndices = np.argsort(distances)
 
-		# logger.debug(clusters[sortedIndices[0]]['labelDistribution'])
+      centerCounter = 0
+      if clusters[sortedIndices[0]]['maxLabelID'] == np.argwhere(activation[4096:] == 1):
+         correct += 1
+         correctPerLabel[np.argwhere(activation[4096:] == 1)] += 1
+      else:
+         wrong += 1
+         wrongPerLabel[np.argwhere(activation[4096:] == 1)] += 1
 
-        # Mean average precision?
-        for idx, labelCount in enumerate(clusters[sortedIndices[0]]['labelDistribution']):
-            if labelCount > maxLabel:
-                maxLabel = labelCount
-            if(idx == np.argwhere(activation[4096:] == 1)):
-				sumCorrectLabel += labelCount
+      maxLabel = 0
+      sumCorrectLabel = 0
 
-        correctRanked += (float(sumCorrectLabel) / maxLabel)
+      # logger.debug(clusters[sortedIndices[0]]['labelDistribution'])
 
 
-    logger.info('Exact prediction:')
-    logger.info('correct: ' + str(correct) + ', wrong: ' + str(wrong) + ', ratio: ' + str(float(correct)/(wrong + correct)))
-    logger.info('correct per label: ' + str(correctPerLabel))
-    logger.info('wrong per label: ' + str(wrongPerLabel))
+      for idx, labelCount in enumerate(clusters[sortedIndices[0]]['labelDistribution']):
+         if labelCount > maxLabel:
+            maxLabel = labelCount
+         if(idx == np.argwhere(activation[4096:] == 1)):
+            sumCorrectLabel += labelCount
 
-    logger.info('Correct ranked: ')
-    logger.info(correctRanked / len(testVectors))
+      # Mean average precision?
+      # precision: |relevant of retreived| / |retreived|
+      # average precision: k=1 => n (precision with k first * 0 (=wrong) or 1(=correct))/relevant
+      # sum all average precision / querycount
 
-def multipleClustersPerLabel(activationVectors, labelNumber, clusterCount):
+      averagePrecision = 0
+      relevant = 0
 
-	splitActivations = [[]] * labelNumber
-	splitCenters = [[]] * labelNumber
+      # logger.debug(clusters[sortedIndices[0]]['labelDistribution'])
+      sortedHistogramIndices = np.argsort(clusters[sortedIndices[0]]['labelDistribution'])[::-1].tolist()
+      # logger.debug(sortedHistogramIndices)
+      for idx, value in enumerate(sortedHistogramIndices):
+         # logger.debug(idx)
+         # logger.debug(labelCount)
+         indicator = 0
+         if(value == np.argwhere(activation[4096:] == 1)):
+            indicator = 1
+            relevant += 1
 
-	labelCounter = 0
-	while labelCounter < labelNumber:
-		splitActivations[labelCounter] = []
-		splitCenters[labelCounter] = []
-		labelCounter += 1
+         precision = float(relevant) / (idx + 1)
+         averagePrecision += (precision * indicator)
 
-	for vector in activationVectors:
-		splitActivations[int(vector[0])].append(vector)
+         # logger.debug('relevant: ' + str(indicator))
+         # logger.debug('indicator: ' + str(indicator))
+         # logger.debug('precision: ' + str(averagePrecision))
 
-	labelCounter = 0
-	while labelCounter < labelNumber:
-		centerCounter = 0
-		while centerCounter < clusterCount:
-			splitCenters[labelCounter].append({'position':random.choice(splitActivations[labelCounter])[1:], 'clusterMembers': []})
-			centerCounter += 1
-		labelCounter += 1
+      averagePrecision = float(averagePrecision) / relevant
+      # logger.debug('average precision: ' + str(averagePrecision))
 
-	labelCounter = 0
-	while labelCounter < labelNumber:
-		iterations = 0
-		while iterations < 100:
-			splitCenters[labelCounter] = kMeansIteration(splitCenters[labelCounter], splitActivations[labelCounter])
-			iterations += 1
-		labelCounter += 1
+      meanAveragePrecision += averagePrecision
+      correctRanked += (float(sumCorrectLabel) / maxLabel)
 
-	return [splitActivations, splitCenters]
 
-def multipleLabelsPerImage(activations, clusterCount, iterations):
-	clusters = []
+   logger.info('Exact prediction:')
+   logger.info('correct: ' + str(correct) + ', wrong: ' + str(wrong) + ', ratio: ' + str(float(correct)/(wrong + correct)))
+   logger.info('correct per label: ' + str(correctPerLabel))
+   logger.info('wrong per label: ' + str(wrongPerLabel))
 
-	counter = 0
-	while counter < clusterCount:
-		clusters.append({'position':random.choice(activations)[0:4096], 'clusterMembers':[]})
-		counter += 1
+   logger.info('Correct ranked: ')
+   logger.info(correctRanked / len(testVectors))
 
-	counter = 0
-	while counter < iterations:
-		logger.info("KMeans iteration " + str(counter + 1))
-		clusters = kMeansIterationMultipleLabels(clusters, activations)
-		counter += 1
+   meanAveragePrecision = float(meanAveragePrecision) / testVectors.shape[0]
+   logger.info('Mean average precision:')
+   logger.info(meanAveragePrecision)
 
-	return clusters
-
-def kMeansIterationMultipleLabels(clusters, activations):
-
-	tempClusters = []
-	updatedClusters = []
-
-	for cluster in clusters:
-		tempClusters.append({'position':cluster.get('position'), 'clusterMembers': []})
-
-	count = 0
-	for activation in activations:
-		distances = []
-		# Calculate distance to centers
-		for cluster in clusters:
-			difference = cluster['position'] - activation[0:4096]
-			distances.append(np.linalg.norm(difference))
-
-		# Assign to closest center
-		members = tempClusters[np.argmin(distances)].get('clusterMembers')
-		members.append(count)
-		tempClusters[np.argmin(distances)]['clusterMembers'] = members
-
-		count += 1
-
-	# Adjust centers towards mean of assigned vectors
-
-	for cluster in tempClusters:
-		#print "Assigned points: " + str(center['clusterMembers'])
-		points = [activations[i][0:4096] for i in cluster['clusterMembers']]
-
-		updatedPosition = np.sum(points, axis=0)
-		if len(cluster['clusterMembers']) != 0:
-			updatedPosition /= len(cluster['clusterMembers'])
-
-		#print 'old position: ' + str(center['position']) + ', length: ' + str(len(center['position']))
-		#print 'new position: ' + str(updatedPosition) + ', length: ' + str(updatedPosition.shape[0])
-
-		updatedClusters.append({'position':updatedPosition, 'clusterMembers': cluster['clusterMembers']})
-
-	return updatedClusters
-
-def clusterAnalysisMultipleLabels(clusters, training):
-
-	analysedCluster = []
-	counter = 0
-	for cluster in clusters:
-		print 'Cluster ' + str(counter) + ', labels:'
-		labels = [np.array(training[i,4096:], dtype='int16') for i in cluster['clusterMembers']]
-
-		labelDistribution = [0] * len(labels[0])
-
-		for label in labels:
-			labelDistribution += label
-
-		print str(labelDistribution)
-
-		maxLabelId = np.argmax(labelDistribution)
-
-		analysedCluster.append({'position': cluster['position'], 'maxLabelID': maxLabelId, 'memberLabelIDs': labels, 'labelDistribution': labelDistribution})
-		counter += 1
-
-	return analysedCluster
+#
+# def multipleClustersPerLabel(activationVectors, labelNumber, clusterCount):
+#
+# 	splitActivations = [[]] * labelNumber
+# 	splitCenters = [[]] * labelNumber
+#
+# 	labelCounter = 0
+# 	while labelCounter < labelNumber:
+# 		splitActivations[labelCounter] = []
+# 		splitCenters[labelCounter] = []
+# 		labelCounter += 1
+#
+# 	for vector in activationVectors:
+# 		splitActivations[int(vector[0])].append(vector)
+#
+# 	labelCounter = 0
+# 	while labelCounter < labelNumber:
+# 		centerCounter = 0
+# 		while centerCounter < clusterCount:
+# 			splitCenters[labelCounter].append({'position':random.choice(splitActivations[labelCounter])[1:], 'clusterMembers': []})
+# 			centerCounter += 1
+# 		labelCounter += 1
+#
+# 	labelCounter = 0
+# 	while labelCounter < labelNumber:
+# 		iterations = 0
+# 		while iterations < 100:
+# 			splitCenters[labelCounter] = kMeansIteration(splitCenters[labelCounter], splitActivations[labelCounter])
+# 			iterations += 1
+# 		labelCounter += 1
+#
+# 	return [splitActivations, splitCenters]
+#
+# def multipleLabelsPerImage(activations, clusterCount, iterations):
+# 	clusters = []
+#
+# 	counter = 0
+# 	while counter < clusterCount:
+# 		clusters.append({'position':random.choice(activations)[0:4096], 'clusterMembers':[]})
+# 		counter += 1
+#
+# 	counter = 0
+# 	while counter < iterations:
+# 		logger.info("KMeans iteration " + str(counter + 1))
+# 		clusters = kMeansIterationMultipleLabels(clusters, activations)
+# 		counter += 1
+#
+# 	return clusters
+#
+# def kMeansIterationMultipleLabels(clusters, activations):
+#
+# 	tempClusters = []
+# 	updatedClusters = []
+#
+# 	for cluster in clusters:
+# 		tempClusters.append({'position':cluster.get('position'), 'clusterMembers': []})
+#
+# 	count = 0
+# 	for activation in activations:
+# 		distances = []
+# 		# Calculate distance to centers
+# 		for cluster in clusters:
+# 			difference = cluster['position'] - activation[0:4096]
+# 			distances.append(np.linalg.norm(difference))
+#
+# 		# Assign to closest center
+# 		members = tempClusters[np.argmin(distances)].get('clusterMembers')
+# 		members.append(count)
+# 		tempClusters[np.argmin(distances)]['clusterMembers'] = members
+#
+# 		count += 1
+#
+# 	# Adjust centers towards mean of assigned vectors
+#
+# 	for cluster in tempClusters:
+# 		#print "Assigned points: " + str(center['clusterMembers'])
+# 		points = [activations[i][0:4096] for i in cluster['clusterMembers']]
+#
+# 		updatedPosition = np.sum(points, axis=0)
+# 		if len(cluster['clusterMembers']) != 0:
+# 			updatedPosition /= len(cluster['clusterMembers'])
+#
+# 		#print 'old position: ' + str(center['position']) + ', length: ' + str(len(center['position']))
+# 		#print 'new position: ' + str(updatedPosition) + ', length: ' + str(updatedPosition.shape[0])
+#
+# 		updatedClusters.append({'position':updatedPosition, 'clusterMembers': cluster['clusterMembers']})
+#
+# 	return updatedClusters
+#
+# def clusterAnalysisMultipleLabels(clusters, training):
+#
+# 	analysedCluster = []
+# 	counter = 0
+# 	for cluster in clusters:
+# 		print 'Cluster ' + str(counter) + ', labels:'
+# 		labels = [np.array(training[i,4096:], dtype='int16') for i in cluster['clusterMembers']]
+#
+# 		labelDistribution = [0] * len(labels[0])
+#
+# 		for label in labels:
+# 			labelDistribution += label
+#
+# 		print str(labelDistribution)
+#
+# 		maxLabelId = np.argmax(labelDistribution)
+#
+# 		analysedCluster.append({'position': cluster['position'], 'maxLabelID': maxLabelId, 'memberLabelIDs': labels, 'labelDistribution': labelDistribution})
+# 		counter += 1
+#
+# 	return analysedCluster

@@ -20,27 +20,12 @@ SOURCE_DIMENSIONS = 4096
 def meanNormalization(activations):
    logger.info("Normalizing input activations...")
 
-   # activationMeans = np.mean(activations, 0)
-   #
-   # substractedMean = activations - activationMeans
-   #
-   # standardDeviationMatrix = np.std(activations, 0)
-   #
-   # logger.debug(activations.shape)
-   # logger.debug(standardDeviationMatrix.shape)
-   # logger.debug(substractedMean.shape)
-   #
-   # result = (substractedMean / standardDeviationMatrix)
-
    minValues = np.amin(activations, 0)
    maxValues = np.amax(activations, 0)
 
-   # logger.debug(minValues.shape)
-   # logger.debug(maxValues.shape)
-   # logger.debug(activations.shape)
-
    result = (activations - minValues) / (maxValues - minValues)
    return result
+
 def calculateCovariance(activations):
 
    logger.info("Calculating covariance...")
@@ -142,21 +127,37 @@ if __name__ == '__main__':
       logger.error("Could not load activations, exiting.")
       sys.exit
 
-   # logger.debug("Max: " + str(np.amax(sourceActivations[:,0:SOURCE_DIMENSIONS])) + ", min: " + str(np.amin(sourceActivations[:,0:SOURCE_DIMENSIONS])))
-   # activations = meanNormalization(sourceActivations[:,0:SOURCE_DIMENSIONS])
-   # logger.debug("Max: " + str(np.amax(activations)) + ", min: " + str(np.amin(activations)) + " (Normalized)")
-   activations = sourceActivations[:,0:SOURCE_DIMENSIONS]
+
+   logger.debug("Max: " + str(np.amax(sourceActivations[:,0:SOURCE_DIMENSIONS])) + ", min: " + str(np.amin(sourceActivations[:,0:SOURCE_DIMENSIONS])))
+   activations = meanNormalization(sourceActivations[:,0:SOURCE_DIMENSIONS])
+   logger.debug("Max: " + str(np.amax(activations)) + ", min: " + str(np.amin(activations)) + " (Normalized)")
 
    if(singularValuesMatrix == None):
       [unitaryMatrix, singularValuesMatrix, V] = getUSV(activations, trainingActivationsPath)
 
    V = None
-   activations = None
    k = findOptimalDimensionCount(singularValuesMatrix)
    logger.info("Optimal k: " + str(k))
    singularValuesMatrix = None
 
    reduced = reduceActivations(unitaryMatrix, sourceActivations[:,0:SOURCE_DIMENSIONS], k)
+
+   activationsReconstructed = np.dot(unitaryMatrix[:,0:activations.shape[1]-k], reduced.T).T
+
+   logger.debug(np.allclose(activations, activationsReconstructed))
+   logger.debug(np.sum(activations))
+   logger.debug(np.sum(activationsReconstructed ))
+
+   absDiffMatrix = np.absolute(activations - activationsReconstructed)
+   logger.debug('-----')
+   logger.debug(np.median(absDiffMatrix))
+   logger.debug(np.amax(absDiffMatrix))
+   logger.debug(np.amin(absDiffMatrix))
+   logger.debug(np.sum(absDiffMatrix))
+
+   plt.hist(absDiffMatrix.flatten(), 50)
+   plt.savefig(os.path.splitext(trainingActivationsPath)[0] + '.pdf', bbox_inches='tight')
+   plt.show()
 
    reduced = np.hstack((reduced, sourceActivations[:,SOURCE_DIMENSIONS:]))
 
