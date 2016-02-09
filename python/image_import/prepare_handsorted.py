@@ -72,7 +72,7 @@ def writeInfoFile(rootPath, images, uniqueLabels):
 if __name__ == '__main__':
 
    rootPath = ''
-   hierarchy = 1
+   hierarchy = 0
 
    if(len(sys.argv) != 2):
       logger.info("Please provide as argument:")
@@ -85,7 +85,7 @@ if __name__ == '__main__':
 
    images = []
    for folder in subFolders:
-      images.append(getImages(rootPath , folder, 1))
+      images.append(getImages(rootPath , folder, hierarchy))
 
    uniqueLabels = []
    for image in images:

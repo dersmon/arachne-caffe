@@ -1,2 +1,0 @@
-bauwerk 0
-plastik 1

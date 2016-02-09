@@ -9,8 +9,8 @@ logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-trainPath = 'label_index_info_train.txt'
-testPath = 'label_index_info_test.txt'
+trainPath = 'label_info_training.txt'
+testPath = 'label_info_test.txt'
 mappingPath = 'label_index_mapping.txt'
 
 def getCardinalityAndDensity(infoPath, labelCount):

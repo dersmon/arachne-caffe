@@ -1,18 +1,14 @@
-from __future__ import print_function
-
 import sys
 import logging
 import os
-import urllib2 as URL
 import json
 import elastic_query
 import import_statistics
-import base64
-
+import random
 
 limitEntityQuery = 1000
 
-imagePerEntity = 200
+imagePerEntity = 1000
 labelMapping = []
 targetPath = './image_dumps/'
 harvestingTest = False
@@ -41,33 +37,41 @@ def startBulkDownload(targetPath, configJSON, showStatisticsPlot):
    imageDictionary = createImageDictionary(imageIds)
 
    labelHistogram = [0] * len(labelMapping)
+   imagesByLabel = [[] for i in range(len(labelMapping))]
+
    labelSum = 0
    for key, value in imageDictionary.items():
       labelHistogram[labelMapping.index(value)] += 1
+      imagesByLabel[labelMapping.index(value)].append(key)
       labelSum += 1
 
-   labelDistributionAdjusted = [(float(labelSum) / x) * adjustmentFactor for x in labelHistogram]
-
-   logger.info("Label distribution:")
+   logger.info("Initial label distribution:")
    logger.info(labelHistogram)
-   logger.info(labelMapping)
-   logger.info(labelDistributionAdjusted)
 
-   logger.info('Original images: ' + str(len(imageIds)) + ', filtered: ' + str(len(imageDictionary)) + '.')
+   imagesPerLabel = min(labelHistogram)
 
-   [entityIds, labelMapping] = retreiveEntityIds(configJSON['queries'], True)
-   imageIds = retreiveImageIds(entityIds)
-   imageDictionary = createImageDictionary(imageIds)
+   imageDictionary = pickFromSurplus(imagesByLabel, imagesPerLabel)
+   # labelDistributionAdjusted = [(float(labelSum) / x) * adjustmentFactor for x in labelHistogram]
+   #
 
-   labelHistogram = []
-
-   labelHistogram = [0] * len(labelMapping)
-   labelSum = 0
-   for key, value in imageDictionary.items():
-      labelHistogram[labelMapping.index(value)] += 1
-      labelSum += 1
-
-   labelDistributionAdjusted = [(float(labelSum) / x) * adjustmentFactor for x in labelHistogram]
+   # logger.info(labelMapping)
+   # logger.info(labelDistributionAdjusted)
+   #
+   # logger.info('Original images: ' + str(len(imageIds)) + ', filtered: ' + str(len(imageDictionary)) + '.')
+   #
+   # [entityIds, labelMapping] = retreiveEntityIds(configJSON['queries'], True)
+   # imageIds = retreiveImageIds(entityIds)
+   # imageDictionary = createImageDictionary(imageIds)
+   #
+   # labelHistogram = []
+   #
+   # labelHistogram = [0] * len(labelMapping)
+   # labelSum = 0
+   # for key, value in imageDictionary.items():
+   #    labelHistogram[labelMapping.index(value)] += 1
+   #    labelSum += 1
+   #
+   # labelDistributionAdjusted = [(float(labelSum) / x) * adjustmentFactor for x in labelHistogram]
 
    logger.info("Label distribution:")
    logger.info(labelHistogram)
@@ -148,6 +152,19 @@ def createImageDictionary(imageIds):
 
    return dictionary
 
+def pickFromSurplus(imagesByLabel, maxImages):
+   logger.info('Picking ' + str(maxImages) + ' images per label.')
+   resultDictionary = dict()
+   labelCounter = 0
+   for images in imagesByLabel:
+      random.shuffle(images)
+      subList = images[0:maxImages]
+      for image in subList:
+         resultDictionary[image] = labelMapping[labelCounter]
+
+      labelCounter += 1
+   return resultDictionary
+
 def streamFiles(exportFolder, dictionary, labelMapping):
 
    logger.info('Downloading image files...')
@@ -173,13 +190,13 @@ def streamFiles(exportFolder, dictionary, labelMapping):
          os.makedirs(os.path.dirname(testFolderPath + label + '/'))
          logger.debug('Created folder: ' + testFolderPath + label + '/')
 
-   if  harvestingTest== False:
+   if  harvestingTest == False:
       logger.info('Downloading images, every '+ str(nthAsTestImage) + 'th is beeing picked as a test image.')
    else:
       logger.info('Skipping image downloads. Just writing index info files.')
 
-   trainingInfoPath = exportFolder + 'label_info_training.txt'
-   testInfoPath = exportFolder + 'label_info_training.txt'
+   trainingInfoPath = exportFolder + '/label_info_training.txt'
+   testInfoPath = exportFolder + '/label_info_test.txt'
 
    for imageId, label in dictionary.items():
 
@@ -204,7 +221,7 @@ def streamFiles(exportFolder, dictionary, labelMapping):
 
       labelInfoString = targetPath + ' ' + str(labelMapping.index(label)) + '\n'
 
-      if harvestingTest== False:
+      if harvestingTest == False:
          with open(targetPath, 'w+') as out:
             out.write(imageData)
 

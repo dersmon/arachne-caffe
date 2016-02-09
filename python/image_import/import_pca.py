@@ -78,6 +78,23 @@ def reduceActivations(unitaryMatrix, activations, k):
    uReduced = unitaryMatrix[:,0:activations.shape[1]-k]
    # uReduced = unitaryMatrix[:,0:4000]
    reducedActivations = np.dot(activations, uReduced)
+
+   # activationsReconstructed = np.dot(uReduced, reducedActivations.T).T
+   #
+   # logger.debug(np.allclose(activations, activationsReconstructed))
+   # logger.debug(np.sum(activations))
+   # logger.debug(np.sum(activationsReconstructed ))
+   #
+   # absDiffMatrix = np.absolute(activations - activationsReconstructed)
+   # logger.debug('-----')
+   # logger.debug(np.median(absDiffMatrix))
+   # logger.debug(np.amax(absDiffMatrix))
+   # logger.debug(np.amin(absDiffMatrix))
+   # logger.debug(np.sum(absDiffMatrix))
+   #
+   # plt.hist(absDiffMatrix.flatten(), 50)
+   # plt.show()
+
    return reducedActivations
 
 def findOptimalDimensionCount(singularValuesMatrix):
@@ -126,9 +143,9 @@ if __name__ == '__main__':
       sys.exit
 
    # logger.debug("Max: " + str(np.amax(sourceActivations[:,0:SOURCE_DIMENSIONS])) + ", min: " + str(np.amin(sourceActivations[:,0:SOURCE_DIMENSIONS])))
-   activations = meanNormalization(sourceActivations[:,0:SOURCE_DIMENSIONS])
+   # activations = meanNormalization(sourceActivations[:,0:SOURCE_DIMENSIONS])
    # logger.debug("Max: " + str(np.amax(activations)) + ", min: " + str(np.amin(activations)) + " (Normalized)")
-
+   activations = sourceActivations[:,0:SOURCE_DIMENSIONS]
 
    if(singularValuesMatrix == None):
       [unitaryMatrix, singularValuesMatrix, V] = getUSV(activations, trainingActivationsPath)
@@ -140,6 +157,7 @@ if __name__ == '__main__':
    singularValuesMatrix = None
 
    reduced = reduceActivations(unitaryMatrix, sourceActivations[:,0:SOURCE_DIMENSIONS], k)
+
    reduced = np.hstack((reduced, sourceActivations[:,SOURCE_DIMENSIONS:]))
 
    reducedActivationsPath = os.path.splitext(trainingActivationsPath)[0] + "_reduced_" + str(k) + ".npy"
@@ -159,20 +177,3 @@ if __name__ == '__main__':
       os.makedirs(os.path.dirname(reducedActivationsPath))
    with open(reducedActivationsPath, "w") as outputFile:
       np.save(outputFile, reduced)
-
-   #
-   # activationsReconstructed = np.dot(uReduced, reducedActivations.T).T
-   #
-   # logger.debug(np.allclose(activations, activationsReconstructed))
-   # logger.debug(np.sum(activations))
-   # logger.debug(np.sum(activationsReconstructed ))
-   #
-   # absDiffMatrix = np.absolute(activations - activationsReconstructed)
-   # logger.debug('-----')
-   # logger.debug(np.median(absDiffMatrix))
-   # logger.debug(np.amax(absDiffMatrix))
-   # logger.debug(np.amin(absDiffMatrix))
-   # logger.debug(np.sum(absDiffMatrix))
-   #
-   # plt.hist(absDiffMatrix.flatten(), 50)
-   # plt.show()

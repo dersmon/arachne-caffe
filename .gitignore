@@ -1,9 +1,10 @@
-dumps/*
-webdemo/bootstrap/*
-*.pyc
-examples/dump_configs/elastic/*.json
-examples/images/*
 *.binaryproto
 *.caffemodel
-image_dumps/
+*.pyc
+
+legacy/
+webdemo/bootstrap/
+webdemo/images/*
+webdemo/image_predictions/*
 numpy_vectors/
+image_imports/
