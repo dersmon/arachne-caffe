@@ -47,7 +47,7 @@ def plotActivations(activations, labelCount, indexLabelMappingPath, plotFileName
    maxValue = np.amax(scaled)
    scaled = scaled * (255 / maxValue)
 
-   plt.imshow(scaled, 'Greys_r', interpolation='none')
+   plt.imshow(scaled, 'afmhot', interpolation='none')
    ax = plt.gca()
    ticks = np.arange(activationsPerLabel * 0.5,selection.shape[0],activationsPerLabel)
 
