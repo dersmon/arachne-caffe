@@ -1,14 +1,16 @@
 import sys
 import os
+import logging
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import modules.arachne_caffe as ac
-import logging
+
 
 logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-batchSize = 200 # how many images to feed to to caffe as one batch
+batchSize = 300 # how many images to feed to to caffe as one batch
 batchLimit = 0  # optional, how many batches should be processed (0 = until there are no more images)
 
 def calculateActivationVectors(trainingDataInfoPath, testDataInfoPath, labelIndexMappingPath, trainingActivationsPath, testActivationsPath):
@@ -29,7 +31,7 @@ if __name__ == '__main__':
       logger.info("3) path to label_index_mapping.txt as argv[3]")
       logger.info("4) target-filename for training data (*.npy) as argv[4]")
       logger.info("5) target-filename for test data (*.npy) as argv[5]")
-      sys.exit
+      sys.exit()
    else:
       trainingDataInfoPath = sys.argv[1]
       testDataInfoPath = sys.argv[2]

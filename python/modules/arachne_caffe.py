@@ -11,19 +11,21 @@ logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+root = '/home/simon/Workspaces/arachne-caffe/'
+
+MODEL_FILE = root + 'caffe_models/hybrid_cnn_handsorted/deploy_FC8.prototxt'
+PRETRAINED_FILE = root + 'caffe_models/hybrid_cnn_handsorted/handsorted_iter_18000.caffemodel'
+MEAN_FILE = root + 'image_imports/handsorted_lmdb/train_mean.binaryproto'
+LAST_LAYER_NAME = 'fc8'
+
+
 def getNetAndTransformer():
 
-	root = './'
-	caffe_root = '/home/simon/Workspaces/caffe/'
-
-	MODEL_FILE = root + 'examples/trained_models/hybrid_cnn/hybridCNN_deploy_FC7.prototxt'
-	PRETRAINED = root + 'examples/trained_models/hybrid_cnn/hybridCNN_iter_700000.caffemodel'
-
-	net = caffe.Net(MODEL_FILE, PRETRAINED, caffe.TEST)
+	net = caffe.Net(MODEL_FILE, PRETRAINED_FILE, caffe.TEST)
 	caffe.set_mode_cpu()
 
 	blob = caffe.proto.caffe_pb2.BlobProto()
-	data = open(root + "examples/trained_models/hybrid_cnn/hybridCNN_mean.binaryproto").read()
+	data = open(MEAN_FILE).read()
 	blob.ParseFromString(data)
 	mean = np.array(caffe.io.blobproto_to_array(blob))[0].mean(1).mean(1)
 
@@ -91,9 +93,9 @@ def evaluateImageBatch(net, transformer, imageBatch, labelCount):
 			labelFlags = np.array([0] * labelCount)
 			labelFlags[np.array(image.get('labelIds'), dtype=np.uint8)] += 1
 
-			batchActivations.append(np.hstack((out['fc7'][counter], labelFlags)))
+			batchActivations.append(np.hstack((out[LAST_LAYER_NAME][counter], labelFlags)))
 		else:
-			batchActivations.append(out['fc7'][counter])
+			batchActivations.append(out[LAST_LAYER_NAME][counter])
 
 		counter += 1
 
@@ -101,7 +103,7 @@ def evaluateImageBatch(net, transformer, imageBatch, labelCount):
 
 def activationsToFile(activations, filePath):
 	logger.info('Writing file ' + filePath)
-	if not os.path.exists(os.path.dirname(filePath)):
+	if not os.path.exists(os.path.dirname(filePath)) and os.path.dirname(filePath) != '':
 		os.makedirs(os.path.dirname(filePath))
 	with open(filePath, "w") as outputFile:
 		np.save(outputFile, activations)
