@@ -147,18 +147,37 @@ if __name__ == '__main__':
       with open(confusionMatrixPath, 'r') as inputFile:
          confusionMatrix = np.load(inputFile)
 
-   logger.debug(confusionMatrix.shape)
+   # logger.debug(confusionMatrix.shape)
    maxValue = np.max(confusionMatrix, axis=1)
-   logger.debug(maxValue.shape)
-   logger.debug(maxValue)
-   logger.debug(confusionMatrix[0,:])
+   # logger.debug(maxValue.shape)
+   # logger.debug(maxValue)
+   # logger.debug(confusionMatrix[0,:])
 
    ax = plt.gca()
    scaled = (confusionMatrix.T / maxValue).T
-   logger.debug(scaled[0,:])
+   # logger.debug(scaled[0,:])
    for(j,i),label in np.ndenumerate(confusionMatrix):
-      ax.text(i,j, int(label), ha='center', va='center', color='green')
+      ax.text(i,j, int(label), ha='center', va='center', color='black')
 
+   ticks = np.arange(len(labels))
 
-   plt.imshow(scaled, 'gray', interpolation='none')
+   ax.set_yticks(ticks)
+   ax.set_yticklabels(labels)
+   ax.set_xticks(ticks)
+   ax.set_xticklabels(labels, rotation=90, ha='center')
+
+   diagonal = np.diag(np.diag(scaled))
+   correct = np.ma.masked_array(scaled, mask=(diagonal==0))
+   false = np.ma.masked_array(scaled, mask=(diagonal!=0))
+
+   # logger.debug(correct)
+   # logger.debug(false)
+   #
+   # logger.debug(false.shape)
+   # logger.debug(scaled.shape)
+   # logger.debug((correct == 0).shape)
+   pa = ax.imshow(correct, cmap='Greens', interpolation='none')
+   pb = ax.imshow(false, cmap='Reds', interpolation='none')
+   # plt.imshow(scaled, 'Greens', interpolation='none')
+   plt.savefig(plotFilePath, bbox_inches='tight')
    plt.show()
