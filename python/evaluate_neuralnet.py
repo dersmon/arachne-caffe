@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import caffe
 import os
 import csv
+import matplotlib.patches as mpatches
 
 logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -174,6 +175,12 @@ def plotTrainingLossAndAccuracy(trainingLogCSVPath, testLogCSVPath, evaluationTa
 
    ax1.grid(True)
    ax2.grid(True)
+
+   labelTrainingLoss = mpatches.Patch(color='r', label='Training set loss')
+   labelTestLoss = mpatches.Patch(color='b', label='Test set loss')
+   labelTestAccuracy = mpatches.Patch(color='g', label='Test set accuracy')
+
+   plt.legend(handles=[labelTrainingLoss, labelTestLoss, labelTestAccuracy])
 
    plt.savefig(evaluationTargetPath + 'lossAndAccuracy.pdf', bbox_inches='tight')
    plt.show()
