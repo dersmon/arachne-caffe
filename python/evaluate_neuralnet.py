@@ -119,7 +119,7 @@ def plotConfusionMatrix(confusionMatrixPath, labels, evaluationTargetPath):
    ax.set_yticks(ticks)
    ax.set_yticklabels(labels)
    ax.set_xticks(ticks)
-   ax.set_xticklabels(labels, rotation=90, ha='center')
+   ax.set_xticklabels(labels, rotation=45, ha='right')
 
    # diagonal = np.diag(np.diag(scaled))
    # correct = np.ma.masked_array(scaled, mask=(diagonal==0))
@@ -205,30 +205,32 @@ if __name__ == '__main__':
    if evaluationTargetPath.endswith('/') == False:
       evaluationTargetPath += '/'
 
+   if not os.path.exists(os.path.dirname(evaluationTargetPath)) and os.path.dirname(evaluationTargetPath) != '':
+      os.makedirs(os.path.dirname(evaluationTargetPath))
+
 
    plotTrainingLossAndAccuracy(trainingLogCSVPath, testLogCSVPath, evaluationTargetPath)
-   # confusionMatrixPath = None
-   #
-   # if len(sys.argv) == 5:
-   #    confusionMatrixPath = sys.argv[4]
-   #
-   # labels = []
-   #
-   # with open(labelIndexMappingPath, "r") as inputFile:
-   #    for line in inputFile.readlines():
-   #       labels.append(line.split(' ')[0])
-   #
-   # logger.info('Labels:')
-   # logger.info(labels)
-   #
-   #
-   # confusionMatrix = createConfusionMatrix(labels, labelIndexInfoPath)
-   #
-   # confusionMatrixPath = evaluationTargetPath + 'confusionMatrix.npy'
-   # logger.info('Writing file ' + confusionMatrixPath)
-   # if not os.path.exists(os.path.dirname(confusionMatrixPath)) and os.path.dirname(confusionMatrixPath) != '':
-   #    os.makedirs(os.path.dirname(confusionMatrixPath))
-   # with open(confusionMatrixPath, "w") as outputFile:
-   #    np.save(outputFile, confusionMatrix)
-   #
-   # plotConfusionMatrix(confusionMatrix, labels, evaluationTargetPath)
+
+   confusionMatrixPath = None
+
+   if len(sys.argv) == 5:
+      confusionMatrixPath = sys.argv[4]
+
+   labels = []
+
+   with open(labelIndexMappingPath, "r") as inputFile:
+      for line in inputFile.readlines():
+         labels.append(line.split(' ')[0])
+
+   logger.info('Labels:')
+   logger.info(labels)
+
+
+   confusionMatrix = createConfusionMatrix(labels, labelIndexInfoPath)
+
+   confusionMatrixPath = evaluationTargetPath + 'confusionMatrix.npy'
+   logger.info('Writing file ' + confusionMatrixPath)
+   with open(confusionMatrixPath, "w") as outputFile:
+      np.save(outputFile, confusionMatrix)
+
+   plotConfusionMatrix(confusionMatrix, labels, evaluationTargetPath)
