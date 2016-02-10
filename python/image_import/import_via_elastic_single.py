@@ -10,7 +10,7 @@ limitEntityQuery = 1000
 
 imagePerEntity = 1000
 labelMapping = []
-targetPath = './image_dumps/'
+targetPath = './image_imports/'
 harvestingTest = False
 labelDistributionAdjusted = []
 adjustmentFactor = 1
