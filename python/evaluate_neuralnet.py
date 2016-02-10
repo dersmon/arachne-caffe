@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import caffe
 import os
+import csv
 
 logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -63,101 +64,51 @@ def evaluateImageBatch(imagePaths):
 
    return result
 
-if __name__ == '__main__':
-
-   if len(sys.argv) != 4 and len(sys.argv) != 5:
-
-      logger.info("Please provide as argument:")
-      logger.info("1) Path to label_index_info_test.")
-      logger.info("2) Path to label_index_mapping.")
-      logger.info("3) Target path for plot (*.pdf or *.png).")
-      logger.info("4) Convusion matrix (*.npy).")
-      sys.exit();
-
-   labelIndexInfoPath = sys.argv[1]
-   labelIndexMappingPath = sys.argv[2]
-   plotFilePath = sys.argv[3]
-   confusionMatrixPath = None
-
-   if len(sys.argv) == 5:
-      confusionMatrixPath = sys.argv[4]
-
-
-
-   labels = []
-
-   with open(labelIndexMappingPath, "r") as inputFile:
-      for line in inputFile.readlines():
-         labels.append(line.split(' ')[0])
-
-   logger.info('Labels:')
-   logger.info(labels)
-
+def createConfusionMatrix(labels, labelIndexInfoPath):
+   imagesByLabel = [[] for i in range(len(labels))]
    confusionMatrix = np.zeros((len(labels),len(labels)))
-   if confusionMatrix == None:
-      imagesByLabel = [[] for i in range(len(labels))]
+   # split info by label
+   with open(labelIndexInfoPath, "r") as inputFile:
+      for line in inputFile.readlines():
+         split = line.split(' ')
+         imagePath = split[0]
+         labelIndex = int(split[1])
 
-      # split info by label
-      with open(labelIndexInfoPath, "r") as inputFile:
-         for line in inputFile.readlines():
-            split = line.split(' ')
-            imagePath = split[0]
-            labelIndex = int(split[1])
+         imagesByLabel[labelIndex].append(imagePath)
 
-            imagesByLabel[labelIndex].append(imagePath)
+   # create batches per split if nessecary
+   for labelIndex, imagePaths in enumerate(imagesByLabel):
+      confusion = np.zeros((1,len(labels)))
 
-      # create batches per split if nessecary
-      for labelIndex, imagePaths in enumerate(imagesByLabel):
-         confusion = np.zeros((1,len(labels)))
+      batches = []
 
-         batches = []
+      if len(imagePaths) > BATCH_SIZE:
+         batchCounter = 0
+         while batchCounter < len(imagePaths):
+            batches.append(imagePaths[batchCounter:batchCounter + BATCH_SIZE])
+            batchCounter += BATCH_SIZE
+      else:
+         batches.append(imagePaths)
 
-         if len(imagePaths) > BATCH_SIZE:
-            batchCounter = 0
-            while batchCounter < len(imagePaths):
-               batches.append(imagePaths[batchCounter:batchCounter + BATCH_SIZE])
-               batchCounter += BATCH_SIZE
-         else:
-            batches.append(imagePaths)
+      batchResults = np.empty((len(batches), len(labels)))
+      # run net and collect predictions
+      for batchIndex, batch in enumerate(batches):
+         batchResults[batchIndex,:] = evaluateImageBatch(batch)
+      # sum up predictions per label type
+      confusion = np.sum(batchResults, axis=0)
+      # append sums to matrix
+      confusionMatrix[labelIndex,:] = confusion
 
-         batchResults = np.empty((len(batches), len(labels)))
-         # run net and collect predictions
-         for batchIndex, batch in enumerate(batches):
-            batchResults[batchIndex,:] = evaluateImageBatch(batch)
-            # logger.debug(batchResults)
-            # logger.debug(batchResults.shape)
-         # sum up predictions per label type
-         confusion = np.sum(batchResults, axis=0)
-         # logger.debug(confusion)
-         # logger.debug(confusion.shape)
-         # logger.debug(np.sum(confusion))
-         # append sums to matrix
-         confusionMatrix[labelIndex,:] = confusion
+   return confusionMatrix
 
-      # logger.debug(confusionMatrix)
-
-      confusionMatrixPath = 'confusion.npy'
-
-      logger.info('Writing file ' + confusionMatrixPath)
-      if not os.path.exists(os.path.dirname(confusionMatrixPath)) and os.path.dirname(confusionMatrixPath) != '':
-         os.makedirs(os.path.dirname(confusionMatrixPath))
-      with open(confusionMatrixPath, "w") as outputFile:
-         np.save(outputFile, confusionMatrix)
-   else:
-      with open(confusionMatrixPath, 'r') as inputFile:
-         confusionMatrix = np.load(inputFile)
-
-   # logger.debug(confusionMatrix.shape)
+def plotConfusionMatrix(confusionMatrixPath, labels, evaluationTargetPath):
    maxValue = np.max(confusionMatrix, axis=1)
-   # logger.debug(maxValue.shape)
-   # logger.debug(maxValue)
-   # logger.debug(confusionMatrix[0,:])
 
    ax = plt.gca()
    scaled = (confusionMatrix.T / maxValue).T
-   # logger.debug(scaled[0,:])
+
    for(j,i),label in np.ndenumerate(confusionMatrix):
-      ax.text(i,j, int(label), ha='center', va='center', color='black')
+      ax.text(i,j, int(label), ha='center', va='center', color='black',  fontsize=8)
 
    ticks = np.arange(len(labels))
 
@@ -166,18 +117,95 @@ if __name__ == '__main__':
    ax.set_xticks(ticks)
    ax.set_xticklabels(labels, rotation=90, ha='center')
 
-   diagonal = np.diag(np.diag(scaled))
-   correct = np.ma.masked_array(scaled, mask=(diagonal==0))
-   false = np.ma.masked_array(scaled, mask=(diagonal!=0))
-
+   # diagonal = np.diag(np.diag(scaled))
+   # correct = np.ma.masked_array(scaled, mask=(diagonal==0))
+   # false = np.ma.masked_array(scaled, mask=(diagonal!=0))
+   # logger.debug(scaled)
+   # logger.debug(diagonal)
+   # logger.debug(correct)
    # logger.debug(correct)
    # logger.debug(false)
    #
    # logger.debug(false.shape)
    # logger.debug(scaled.shape)
    # logger.debug((correct == 0).shape)
-   pa = ax.imshow(correct, cmap='Greens', interpolation='none')
-   pb = ax.imshow(false, cmap='Reds', interpolation='none')
-   # plt.imshow(scaled, 'Greens', interpolation='none')
-   plt.savefig(plotFilePath, bbox_inches='tight')
+   # pa = ax.imshow(correct, cmap='Greens', interpolation='none')
+   # pb = ax.imshow(false, cmap='Reds', interpolation='none')
+
+   plt.imshow(scaled, 'Blues', interpolation='none')
+   plt.savefig(evaluationTargetPath + 'confusionMatrix.pdf', bbox_inches='tight')
+
+if __name__ == '__main__':
+
+   if len(sys.argv) != 6:
+
+      logger.info("Please provide as argument:")
+      logger.info("1) Path to label_index_info_test.")
+      logger.info("2) Path to label_index_mapping.")
+      logger.info("3) Path to training log (*.csv).")
+      logger.info("4) Path to test log (*.csv).")
+      logger.info("5) Target path for evaluation results.")
+      sys.exit();
+
+   labelIndexInfoPath = sys.argv[1]
+   labelIndexMappingPath = sys.argv[2]
+   trainingLogCSVPath = sys.argv[3]
+   testLogCSVPath = sys.argv[4]
+   evaluationTargetPath = sys.argv[5]
+   if evaluationTargetPath.endswith('/') == False:
+      evaluationTargetPath += '/'
+
+   trainingLog = []
+   with open(trainingLogCSVPath, 'r') as csvFile:
+      reader = csv.reader(csvFile, delimiter=',')
+      for row in reader:
+         trainingLog.append(row)
+
+   trainingLog = np.array(trainingLog)
+   logger.debug(trainingLog.shape)
+   logger.debug(trainingLog[0])
+
+   testLog = []
+   with open(testLogCSVPath, 'r') as csvFile:
+      reader = csv.reader(csvFile, delimiter=',')
+      for row in reader:
+         testLog.append(row)
+
+   testLog = np.array(testLog)
+
+   plt.axis([0, 5000, 0, 2])
+   plt.xticks(np.arange(0,5001,250))
+   locs, labels = plt.xticks()
+   plt.setp(labels, rotation=45, ha='right')
+
+   plt.plot(trainingLog[1:,0], trainingLog[1:,3], 'r', testLog[1:,0])# testLog[1:,0], testLog[1:,4], 'b')
+
+   plt.xlabel('Iterations')
+   plt.ylabel('Loss')
+   plt.grid(True)
    plt.show()
+   # confusionMatrixPath = None
+   #
+   # if len(sys.argv) == 5:
+   #    confusionMatrixPath = sys.argv[4]
+   #
+   # labels = []
+   #
+   # with open(labelIndexMappingPath, "r") as inputFile:
+   #    for line in inputFile.readlines():
+   #       labels.append(line.split(' ')[0])
+   #
+   # logger.info('Labels:')
+   # logger.info(labels)
+   #
+   #
+   # confusionMatrix = createConfusionMatrix(labels, labelIndexInfoPath)
+   #
+   # confusionMatrixPath = evaluationTargetPath + 'confusionMatrix.npy'
+   # logger.info('Writing file ' + confusionMatrixPath)
+   # if not os.path.exists(os.path.dirname(confusionMatrixPath)) and os.path.dirname(confusionMatrixPath) != '':
+   #    os.makedirs(os.path.dirname(confusionMatrixPath))
+   # with open(confusionMatrixPath, "w") as outputFile:
+   #    np.save(outputFile, confusionMatrix)
+   #
+   # plotConfusionMatrix(confusionMatrix, labels, evaluationTargetPath)
