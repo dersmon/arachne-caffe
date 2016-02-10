@@ -108,8 +108,7 @@ def createLabelHistogram(imagesByLabel, labels, evaluationTargetPath):
    plt.xticks(x_pos, x_pos)
    plt.gca().xaxis.grid(True)
    # plt.title('Label distribution:')
-   # plt.savefig(evaluationTargetPath + "label_distribution.pdf", bbox_inches='tight')
-   plt.show()
+   plt.savefig(evaluationTargetPath + "label_distribution.pdf", bbox_inches='tight')
    plt.close()
 
 def createExampleGrids(imagesByLabel, labels, evaluationTargetPath):
@@ -167,7 +166,7 @@ def evaluateImport(infoTrainPath, infoTestPath, labelIndexMappingPath, evaluatio
          imagesByLabel[labelIndex].append(imagePath)
 
    createLabelHistogram(imagesByLabel, labels, evaluationTargetPath)
-   # createExampleGrids(imagesByLabel, labels, evaluationTargetPath)
+   createExampleGrids(imagesByLabel, labels, evaluationTargetPath)
 
 if __name__ == '__main__':
    if(len(sys.argv) != 5):
