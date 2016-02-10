@@ -12,11 +12,14 @@ logger.setLevel(logging.DEBUG)
 
 root = './'
 
-BATCH_SIZE = 5
+BATCH_SIZE = 100
 MODEL_FILE = root + 'caffe_models/hybrid_cnn_handsorted/deploy.prototxt'
 PRETRAINED_FILE = root + 'caffe_models/hybrid_cnn_handsorted/handsorted_iter_18000.caffemodel'
 MEAN_FILE = root + 'image_imports/handsorted_lmdb/train_mean.binaryproto'
 LAST_LAYER_NAME = 'fc8'
+
+LOSS_MAXIMUM = 2
+ITERATION_MAXIMUM = 1000
 
 net = None
 transformer = None
@@ -135,6 +138,46 @@ def plotConfusionMatrix(confusionMatrixPath, labels, evaluationTargetPath):
    plt.imshow(scaled, 'Blues', interpolation='none')
    plt.savefig(evaluationTargetPath + 'confusionMatrix.pdf', bbox_inches='tight')
 
+def plotTrainingLossAndAccuracy(trainingLogCSVPath, testLogCSVPath, evaluationTargetPath):
+   trainingLog = []
+   with open(trainingLogCSVPath, 'r') as csvFile:
+      reader = csv.reader(csvFile, delimiter=',')
+      for row in reader:
+         trainingLog.append(row)
+
+   trainingLog = np.array(trainingLog)
+
+   testLog = []
+   with open(testLogCSVPath, 'r') as csvFile:
+      reader = csv.reader(csvFile, delimiter=',')
+      for row in reader:
+         testLog.append(row)
+
+   testLog = np.array(testLog)
+
+   fig, ax1 = plt.subplots()
+   ax1.plot(trainingLog[1:,0], trainingLog[1:,3], 'r', testLog[1:,0], testLog[1:,4], 'b')
+
+   ax1.set_xlabel('Iterations')
+   ax1.set_ylabel('Loss')
+
+   ax2 = ax1.twinx()
+   ax2.plot(testLog[1:,0], testLog[1:,3], 'g')
+   ax2.set_ylabel('Accuracy')
+
+   ax1.axis([0, ITERATION_MAXIMUM, 0, LOSS_MAXIMUM])
+   ax2.axis([0, ITERATION_MAXIMUM, 0, 1])
+   ax1.set_xticks(np.arange(0,ITERATION_MAXIMUM + 1,ITERATION_MAXIMUM / 10))
+   ax1.set_xticklabels(np.arange(0,ITERATION_MAXIMUM + 1, ITERATION_MAXIMUM / 10), rotation=45)
+   ax1.set_yticks(np.arange(0, LOSS_MAXIMUM, float(LOSS_MAXIMUM) / 10))
+   ax2.set_yticks(np.arange(0, 1, float(1) / 10))
+
+   ax1.grid(True)
+   ax2.grid(True)
+
+   plt.savefig(evaluationTargetPath + 'lossAndAccuracy.pdf', bbox_inches='tight')
+   plt.show()
+
 if __name__ == '__main__':
 
    if len(sys.argv) != 6:
@@ -155,35 +198,8 @@ if __name__ == '__main__':
    if evaluationTargetPath.endswith('/') == False:
       evaluationTargetPath += '/'
 
-   trainingLog = []
-   with open(trainingLogCSVPath, 'r') as csvFile:
-      reader = csv.reader(csvFile, delimiter=',')
-      for row in reader:
-         trainingLog.append(row)
 
-   trainingLog = np.array(trainingLog)
-   logger.debug(trainingLog.shape)
-   logger.debug(trainingLog[0])
-
-   testLog = []
-   with open(testLogCSVPath, 'r') as csvFile:
-      reader = csv.reader(csvFile, delimiter=',')
-      for row in reader:
-         testLog.append(row)
-
-   testLog = np.array(testLog)
-
-   plt.axis([0, 5000, 0, 2])
-   plt.xticks(np.arange(0,5001,250))
-   locs, labels = plt.xticks()
-   plt.setp(labels, rotation=45, ha='right')
-
-   plt.plot(trainingLog[1:,0], trainingLog[1:,3], 'r', testLog[1:,0])# testLog[1:,0], testLog[1:,4], 'b')
-
-   plt.xlabel('Iterations')
-   plt.ylabel('Loss')
-   plt.grid(True)
-   plt.show()
+   plotTrainingLossAndAccuracy(trainingLogCSVPath, testLogCSVPath, evaluationTargetPath)
    # confusionMatrixPath = None
    #
    # if len(sys.argv) == 5:
