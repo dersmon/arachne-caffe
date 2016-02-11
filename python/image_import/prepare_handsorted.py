@@ -18,7 +18,7 @@ def subFolders(rootPath):
    return labels
 
 def getImages(rootPath, folder, hierarchy):
-   imageFolder = rootPath + "/" + folder
+   imageFolder = rootPath  + folder
    label = ''
    if hierarchy == 0:
       label = folder
@@ -75,9 +75,12 @@ if __name__ == '__main__':
    if(len(sys.argv) != 2):
       logger.info("Please provide as argument:")
       logger.info("1) path to root folder")
-      sys.exit
+      sys.exit()
    else:
       rootPath = sys.argv[1]
+
+   if rootPath.endswith('/') == False:
+      rootPath += '/'
 
    subFolders = subFolders(rootPath)
 
@@ -93,7 +96,7 @@ if __name__ == '__main__':
    uniqueLabels.sort()
    logger.debug(uniqueLabels)
 
-   indexLabelMappingPath = rootPath + '/label_index_mapping_' + str(hierarchy) +'.txt'
+   indexLabelMappingPath = rootPath + 'label_index_mapping_' + str(hierarchy) +'.txt'
    if not os.path.exists(os.path.dirname(indexLabelMappingPath)):
       os.makedirs(os.path.dirname(indexLabelMappingPath))
 
