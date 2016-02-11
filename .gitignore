@@ -8,3 +8,4 @@ webdemo/images/*
 webdemo/image_predictions/*
 numpy_activations/
 image_imports/
+evaluation/
