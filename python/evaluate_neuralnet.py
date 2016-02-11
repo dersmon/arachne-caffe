@@ -18,6 +18,7 @@ MODEL_FILE = root + 'caffe_models/hybrid_cnn_handsorted/deploy.prototxt'
 PRETRAINED_FILE = root + 'caffe_models/hybrid_cnn_handsorted/handsorted_iter_18000.caffemodel'
 MEAN_FILE = root + 'image_imports/handsorted_lmdb/train_mean.binaryproto'
 LAST_LAYER_NAME = 'fc8'
+USE_GPU = False
 
 LOSS_MAXIMUM = 2
 ITERATION_MAXIMUM = 1000
@@ -30,7 +31,11 @@ transformer = None
 def setupCaffe():
    global net, transformer
    net = caffe.Net(MODEL_FILE, PRETRAINED_FILE, caffe.TEST)
-   caffe.set_mode_cpu()
+
+   if USE_GPU:
+      caffe.set_mode_gpu()
+   else:
+      caffe.set_mode_cpu()
 
    blob = caffe.proto.caffe_pb2.BlobProto()
    data = open(MEAN_FILE).read()
