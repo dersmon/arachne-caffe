@@ -2,8 +2,6 @@ import sys
 import os
 import logging
 
-import import_to_numpy as itm
-
 logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -107,5 +105,3 @@ if __name__ == '__main__':
    [trainingInfo, testInfo] = writeInfoFile(rootPath, images, uniqueLabels)
    exportName = os.path.dirname(rootPath)
    exportName = exportName.split('/')[len(exportName.split('/')) - 1]
-
-   itm.calculateActivationVectors(trainingInfo, testInfo, indexLabelMappingPath, './numpy_vectors/' + exportName + '_train_' + str(hierarchy) +'.npy', './numpy_vectors/' + exportName + '_test_' + str(hierarchy) +'.npy')
