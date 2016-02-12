@@ -7,7 +7,7 @@ import modules.arachne_caffe as ac
 
 logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 def getLabelStrings(filePath):
    with open(filePath, 'r') as inputFile:
@@ -20,8 +20,17 @@ def getLabelStrings(filePath):
 def plotActivations(activations, labelCount, indexLabelMappingPath, plotFileName):
 
    firstLabelIndex = activations.shape[1] - labelCount
+   reduceActivationsBy = 1
+   if firstLabelIndex % 4 == 0 and firstLabelIndex > 1024:
+      reduceActivationsBy = 4
+   elif firstLabelIndex % 2 == 0 and firstLabelIndex > 1024:
+      reduceActivationsBy = 2
+
+   reduceActivationsTo = firstLabelIndex / reduceActivationsBy
+
    activationsPerLabel = 1024 / labelCount
-   logger.info(str(activationsPerLabel) + " pixel per label.")
+
+   logger.info(str(activationsPerLabel) + " rows per label.")
 
    labels = np.array(activations)[:,firstLabelIndex:]
    selection = np.empty((0, activations.shape[1]))
@@ -32,7 +41,7 @@ def plotActivations(activations, labelCount, indexLabelMappingPath, plotFileName
    while labelCounter < labels.shape[1]:
       picked = np.random.randint(0,activations.shape[0],2)
       monoLabelSelection = activations[np.logical_or.reduce([activations[:,firstLabelIndex+labelCounter] == 1])]
-      picked = np.random.randint(0,monoLabelSelection.shape[0],activationsPerLabel)
+      picked = np.random.randint(0, monoLabelSelection.shape[0], activationsPerLabel)
       subSelection = monoLabelSelection[picked]
       selection = np.vstack((selection, subSelection))
 
@@ -42,12 +51,11 @@ def plotActivations(activations, labelCount, indexLabelMappingPath, plotFileName
    if indexLabelMappingPath != None:
        tickLabels = getLabelStrings(indexLabelMappingPath)
 
-   scaled = selection[:,0:firstLabelIndex].reshape(selection.shape[0],4,1024)
+   scaled = np.reshape(selection[:,0:firstLabelIndex], (selection.shape[0], reduceActivationsBy, reduceActivationsTo))
    scaled = scaled.mean(axis=1)
-   maxValue = np.amax(scaled)
-   scaled = scaled * (255 / maxValue)
 
    plt.imshow(scaled, 'afmhot', interpolation='none')
+
    ax = plt.gca()
    ticks = np.arange(activationsPerLabel * 0.5,selection.shape[0],activationsPerLabel)
 
