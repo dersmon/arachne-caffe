@@ -19,32 +19,41 @@ def findKMeansPerLabel(activations, k, labelCount, targetPath):
 def findKMeansPerLabel(activations, k, labelCount, targetPath, indexLabelMapping):
    labels = None
    if indexLabelMapping != None:
-      labels = utility.getLabelStrings(sys.argv[5])
+      labels = utility.getLabelStrings(indexLabelMapping)
+
+   logger.debug(labelCount)
 
    # split activations by label
    activationsByLabel = []
    counter = 0
    while counter < labelCount:
       currentLabelIndex = activations.shape[1] - labelCount + counter
+      logger.debug(currentLabelIndex)
       currentSelection = activations[activations[:, currentLabelIndex] == 1]
       activationsByLabel.append(currentSelection)
       counter += 1
 
+   logger.debug("Activations shape: " + str(activations.shape))
+   logger.debug("Activations by label length: " + str(len(activationsByLabel)))
+   logger.debug("Activations by label 0 shape: " + str(activationsByLabel[0].shape))
+
    counter = 0
    clusters = []
    iterations = []
-   for activations in activationsByLabel:
+   for batch in activationsByLabel:
       if labels != None:
-         logger.info('Running KMeans for label ' + labels[counter])
+         logger.info('Running KMeans for label ' + labels[counter] + '.')
       else:
          logger.info('Running KMeans for label ' + str(counter))
-
-      [c, i] = kMeans_core.runKMeans(activations, labelCount, k, MAX_ITERATIONS)
+      logger.debug("Batch shape: " + str(batch.shape))
+      [c, i] = kMeans_core.runKMeans(batch, labelCount, k, MAX_ITERATIONS)
       clusters.extend(c)
       iterations.append(i)
       counter += 1
 
    kMeans_core.saveResults(clusters, iterations, targetPath + 'per_label_' + str(k))
+
+   return [clusters, iterations]
 
 if __name__ == '__main__':
 

@@ -88,12 +88,14 @@ def kMeansIteration(clusters, activations, firstLabelIndex):
 
    return updatedClusters
 
-def saveResults(clusters, iterations, targetPath):
+def cleanUp(clusters):
    data = []
    for cluster in clusters:
       data.append(np.hstack((cluster['position'], cluster['memberLabelHistogram'])))
+   return np.array(data)
 
-   data = np.array(data)
+def saveResults(clusters, iterations, targetPath):
+   data = cleanUp(clusters)
    with open(targetPath + '_means_clusters.npy', "w") as outputFile:
       np.save(outputFile, data)
    with open(targetPath + '_means_iterations.npy', "w") as outputFile:
