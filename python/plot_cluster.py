@@ -19,6 +19,7 @@ def plotPositions(positions, additionalRows, targetPath):
    ax.set_xlabel('Coordinates')
    ax.set_ylabel('Clusters')
    plt.savefig(targetPath + 'cluster_positions.pdf')
+   plt.close()
 
 def plotLabelGrid(clusterLabelHistograms, labelCount, labels, targetPath):
    clusterLabelHistograms = clusterLabelHistograms.T
@@ -27,8 +28,8 @@ def plotLabelGrid(clusterLabelHistograms, labelCount, labels, targetPath):
    ax = plt.gca()
    scaled = (clusterLabelHistograms.T / maxValue).T
 
-   for(j,i),label in np.ndenumerate(clusterLabelHistograms):
-      ax.text(i,j, int(label), ha='center', va='center', color='black',  fontsize=8)
+   # for(j,i),label in np.ndenumerate(clusterLabelHistograms):
+   #    ax.text(i,j, int(label), ha='center', va='center', color='black',  fontsize=8)
 
    labelTicks = np.arange(labelCount)
 
@@ -40,19 +41,22 @@ def plotLabelGrid(clusterLabelHistograms, labelCount, labels, targetPath):
    ax.set_yticklabels(labels)
 
    ax.set_xlabel('Clusters')
-   ax.set_xticks(np.arange(0, clusterLabelHistograms.shape[1]))
-   if len(labels) < clusterLabelHistograms.shape[1] / 2:
-      ax.set_xticklabels(np.arange(0, clusterLabelHistograms.shape[1]), rotation=45, ha='right')
-   else:
-      ax.set_xticklabels(np.arange(0, clusterLabelHistograms.shape[1]))
+   # ax.set_xticks(np.arange(0, clusterLabelHistograms.shape[1]))
+   # if len(labels) <= clusterLabelHistograms.shape[1]:
+   #    ax.set_xticklabels(np.arange(0, clusterLabelHistograms.shape[1]), rotation=45, ha='right')
+   # else:
+   #    ax.set_xticklabels(np.arange(0, clusterLabelHistograms.shape[1]))
 
    plt.imshow(scaled, 'Blues', interpolation='none')
    plt.savefig(targetPath + 'matrix.pdf', bbox_inches='tight')
+   plt.close()
 
 def plotClusters(clusters, iterations, neurons, targetPath):
    evaluateClusters(clusters, iterations, neurons, targetPath, None)
 
 def plotClusters(clusters, iterations, neurons, targetPath, labels):
+   logger.debug(clusters.shape)
+   logger.debug(neurons)
    labelCount = clusters.shape[1] - neurons
    additionalRows = 1024 / clusters.shape[0]
    positions = clusters[:,0:neurons]

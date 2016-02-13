@@ -4,7 +4,7 @@ import logging
 
 logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 def runKMeans(activations, labelCount, clusterCount, maxIterations):
 
@@ -23,7 +23,7 @@ def runKMeans(activations, labelCount, clusterCount, maxIterations):
    # Run K-means iterations.
    iteration = 0
    while iteration < maxIterations:
-      logger.info("Running KMeans iteration " + str(iteration) + ".")
+      # logger.info("Running KMeans iteration " + str(iteration) + ".")
       previousclusters = clusters
       clusters = kMeansIteration(clusters, activations, firstLabelIndex)
       changed = False
@@ -78,8 +78,10 @@ def kMeansIteration(clusters, activations, firstLabelIndex):
       logger.debug('Points shape: ' + str(np.array(points).shape))
       logger.debug('Label histogram shape: ' + str(memberLabelHistogram.shape))
       logger.debug('Updated position shape: ' + str(updatedPosition.shape))
-      if membersIndices.shape == False: # this cluster has no members assigned, create empty members and keep old position
-         memberLabelHistogram = np.zeros((1, firstLabelIndex))
+      if membersIndices.size == 0: # this cluster has no members assigned, create empty members and keep old position
+         logger.info('Cluster without members.')
+         memberLabelHistogram = np.zeros((1, activations.shape[1] - firstLabelIndex))
+         logger.info('Histogram: ' + str(memberLabelHistogram))
          membersIndices = []
          updatedPosition = cluster['position']
 
@@ -89,8 +91,11 @@ def kMeansIteration(clusters, activations, firstLabelIndex):
    return updatedClusters
 
 def cleanUp(clusters):
+   logger.debug("Cluster count: " + str(len(clusters)))
    data = []
    for cluster in clusters:
+      logger.debug("Position: " + str(cluster['position'].shape))
+      logger.debug("Histogram: " + str(cluster['memberLabelHistogram'].shape))
       data.append(np.hstack((cluster['position'], cluster['memberLabelHistogram'])))
    return np.array(data)
 

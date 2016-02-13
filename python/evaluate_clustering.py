@@ -15,17 +15,17 @@ import logging
 
 logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 MAX_ITERATIONS_PER_LABEL = 150
 MAX_ITERATIONS_MIXED = 150
 
 PER_LABEL_START = 1
-PER_LABEL_END = 3
+PER_LABEL_END = 12
 
 MIXED_START = 5
 MIXED_STEP = 5
-MIXED_END = 15
+MIXED_END = 120
 
 def evaluateKMeans(trainingActivationsPath, testActivationsPath, labelIndexMappingPath, targetFolder, subfolderPrefix):
    if targetFolder.endswith('/') == False:
@@ -33,7 +33,7 @@ def evaluateKMeans(trainingActivationsPath, testActivationsPath, labelIndexMappi
 
    trainingActivations = utility.arrayFromFile(trainingActivationsPath)
    labels = utility.getLabelStrings(labelIndexMappingPath)
-
+   neurons = trainingActivations.shape[1] - len(labels)
    logger.debug(labels)
 
    # test per label k-means
@@ -45,7 +45,7 @@ def evaluateKMeans(trainingActivationsPath, testActivationsPath, labelIndexMappi
          os.makedirs(os.path.dirname(currentTarget))
 
       c, i = kMeans_per_label.findKMeansPerLabel(trainingActivations, k, len(labels), currentTarget, labelIndexMappingPath)
-      plot_cluster.plotClusters(kMeans_core.cleanUp(c), i, trainingActivations.shape[1] - len(labels), currentTarget, labels[:len(labels)])
+      plot_cluster.plotClusters(kMeans_core.cleanUp(c), i, neurons, currentTarget, labels[:len(labels)])
 
       k += 1
 
@@ -65,8 +65,8 @@ if __name__ == '__main__':
    if len(sys.argv) != 6:
 
       logger.info("Please provide as argument:")
-      logger.info("1) Path to label_index_info_train.")
-      logger.info("2) Path to label_index_info_test.")
+      logger.info("1) Path to training activations.")
+      logger.info("2) Path to test activations.")
       logger.info("3) Path to label_index_mapping.")
       logger.info("4) Target path for evaluation results.")
       logger.info("5) Prefix for result folders.")
