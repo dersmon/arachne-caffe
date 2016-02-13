@@ -11,14 +11,14 @@ logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-batchSize = 200 # how many images to feed to to caffe as one batch
+batchSize = 300 # how many images to feed to to caffe as one batch
 batchLimit = 0  # optional, how many batches should be processed (0 = until there are no more images)
 
 root = './'
 
 MODEL_FILE = root + 'caffe_models/hybrid_cnn_handsorted/deploy_FC7.prototxt'
-PRETRAINED_FILE = root + 'caffe_models/hybrid_cnn_handsorted/hybridCNN_iter_700000.caffemodel'
-MEAN_FILE = root + 'image_imports/handsorted_lmdb/train_mean.binaryproto'
+PRETRAINED_FILE = root + 'caffe_models/hybrid_cnn_handsorted/handsorted_lmdb_iter_5000.caffemodel'
+MEAN_FILE = root + 'image_imports/handsorted_lmdb/mean_train.binaryproto'
 LAST_LAYER_NAME = 'fc7'
 USE_GPU = False
 
@@ -133,7 +133,7 @@ if __name__ == '__main__':
 
    resultPath = sys.argv[3]
 
-   if resultPath.endswith('/') == False:
-      resultPath += '/'
+   if not os.path.exists(os.path.dirname(resultPath)):
+      os.makedirs(os.path.dirname(resultPath))
 
    calculateActivationVectors(sys.argv[1], sys.argv[2], resultPath)

@@ -11,12 +11,12 @@ logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-root = '/home/simon/Workspaces/arachne-caffe/'
+root = './'
 
-MODEL_FILE = root + 'caffe_models/hybrid_cnn_handsorted/deploy_FC8.prototxt'
+MODEL_FILE = root + 'caffe_models/hybrid_cnn_handsorted/deploy_FC7.prototxt'
 PRETRAINED_FILE = root + 'caffe_models/hybrid_cnn_handsorted/handsorted_iter_18000.caffemodel'
 MEAN_FILE = root + 'image_imports/handsorted_lmdb/train_mean.binaryproto'
-LAST_LAYER_NAME = 'fc8'
+LAST_LAYER_NAME = 'fc7'
 
 
 def getNetAndTransformer():
