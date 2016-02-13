@@ -7,7 +7,7 @@ import kMeans_core
 
 logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 MAX_ITERATIONS = 150
 
@@ -41,7 +41,7 @@ if __name__ == '__main__':
       targetPath += '/'
    if not os.path.exists(os.path.dirname(targetPath)):
       os.makedirs(os.path.dirname(targetPath))
-      
+
    k = int(sys.argv[2])
    labelCount = len(activations[0][int(sys.argv[3]):])
 
