@@ -3,9 +3,13 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 
-import modules.arachne_caffe as ac
-import modules.arachne_KNN_prediction as aknnp
-import modules.arachne_KMeans_prediction as akmp
+import modules.utility as utility
+
+import clustering.kMeans_core as kMeans_core
+import clustering.kMeans_mixed as kMeans_mixed
+import clustering.kMeans_per_label as kMeans_per_label
+
+import plot_cluster as plot_cluster
 
 import logging
 
@@ -13,103 +17,59 @@ logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-saveFile = "./clusters_handsorted_quadrupeled_centers_2.npy"
+MAX_ITERATIONS_PER_LABEL = 150
+MAX_ITERATIONS_MIXED = 150
 
-def testKNN(training, test, labelCount):
-	# filePath = "./neighbours_elastic.npy"
-	testNeighbours = aknnp.nearestNeighbours(training, test, 50)
+PER_LABEL_START = 1
+PER_LABEL_END = 3
 
-	# print 'Writing file ' + filePath
-	# if not os.path.exists(os.path.dirname(filePath)):
-	# 	os.makedirs(os.path.dirname(filePath))
-	# with open(filePath, "w") as outputFile:
-	# 	np.save(outputFile, testNeighbours)
+MIXED_START = 5
+MIXED_STEP = 5
+MIXED_END = 15
 
-	# with open(filePath, 'r') as inputFile:
-	# 	testNeighbours = np.load(inputFile)
+def evaluateKMeans(trainingActivationsPath, testActivationsPath, labelIndexMappingPath, targetFolder, subfolderPrefix):
+   if targetFolder.endswith('/') == False:
+      targetFolder += '/'
 
-	count = 0
-	data = []
-	while count < 50 and count < len(training):
+   trainingActivations = utility.arrayFromFile(trainingActivationsPath)
+   labels = utility.getLabelStrings(labelIndexMappingPath)
 
-		(correct, wrong, correctPerLabel, wrongPerLabel) = aknnp.kNearestAnalysed(testNeighbours, count + 1, labelCount)
+   logger.debug(labels)
 
-		data.append([count, float(correct)/(wrong + correct)])
-		count += 1
-		if((count + 1) % 100 == 0):
-			logger.info('Calculated prediction for ' + str(count + 1) + ' nearest neighbours.')
+   # test per label k-means
+   k = PER_LABEL_START
+   while k < PER_LABEL_END:
+      logger.info("Testing per label KMeans with k = " + str(k) + ".")
+      currentTarget = targetFolder + subfolderPrefix + "_perLabel_" + str(k) + "/"
+      if not os.path.exists(os.path.dirname(currentTarget)):
+         os.makedirs(os.path.dirname(currentTarget))
 
-		logger.info(str(correct) + ", " + str(wrong) + ", " + str(float(correct)/(wrong + correct)))
+      c, i = kMeans_per_label.findKMeansPerLabel(trainingActivations, k, len(labels), currentTarget, labelIndexMappingPath)
+      plot_cluster.plotClusters(kMeans_core.cleanUp(c), i, trainingActivations.shape[1] - len(labels), currentTarget, labels[:len(labels)])
 
-	logger.info('Calculated prediction for ' + str(count) + ' nearest neighbours.')
-	data = np.array(data)
+      k += 1
 
-	plt.plot(data[:,0], data[:,1], 'k')
-	plt.axis([1, len(data), 0, 1])
-	plt.grid(True)
-	plt.show()
+   # test mixed k-means
+   k = MIXED_START
+   while k < MIXED_END:
+      logger.info("Testing mixed KMeans with k = " + str(k) + ".")
+      currentTarget = targetFolder + subfolderPrefix + "_mixed_" + str(k) + "/"
+      if not os.path.exists(os.path.dirname(currentTarget)):
+         os.makedirs(os.path.dirname(currentTarget))
+      [c,i] = kMeans_mixed.findKMeans(trainingActivations, k, len(labels), currentTarget)
+      plot_cluster.plotClusters(kMeans_core.cleanUp(c), i, trainingActivations.shape[1] - len(labels), currentTarget, labels[:len(labels)])
 
-def calculateKMeans(training, labelCount):
+      k += MIXED_STEP
 
-	clusterCount = labelCount * 4
-	clusters = None
-	clusters = akmp.kMeans(training, clusterCount, 150)
+if __name__ == '__main__':
+   if len(sys.argv) != 6:
 
-	logger.info('Writing file ' + saveFile)
-	if not os.path.exists(os.path.dirname(saveFile)):
-		os.makedirs(os.path.dirname(saveFile))
-	with open(saveFile, "w") as outputFile:
-		np.save(outputFile, clusters)
+      logger.info("Please provide as argument:")
+      logger.info("1) Path to label_index_info_train.")
+      logger.info("2) Path to label_index_info_test.")
+      logger.info("3) Path to label_index_mapping.")
+      logger.info("4) Target path for evaluation results.")
+      logger.info("5) Prefix for result folders.")
+      sys.exit();
 
-	# with open(saveFile, 'r') as inputFile:
-	# 	clusters = np.load(inputFile)
-
-	clusters = akmp.clusterAnalysis(clusters, training, labelCount)
-
-	logger.info('Writing file ' + saveFile)
-	if not os.path.exists(os.path.dirname(saveFile)):
-		os.makedirs(os.path.dirname(saveFile))
-	with open(saveFile, "w") as outputFile:
-		np.save(outputFile, clusters)
-
-	return clusters
-
-
-def testKMeans(test, clusters):
-
-	# with open(saveFile, 'r') as inputFile:
-	# 	clusters = np.load(inputFile)
-
-   akmp.clusterTest(clusters, test)
-
-trainingActivationsPath = ""
-testActivationsPath = ""
-
-trainingActivations = None
-testActivations = None
-
-if(len(sys.argv) < 2):
-	logger.error("No training activations provided.")
-else:
-	trainingActivationsPath = sys.argv[1]
-
-if(len(sys.argv) < 3):
-	logger.error("No test activations provided.")
-else:
-	testActivationsPath = sys.argv[2]
-
-if trainingActivationsPath.endswith('.npy'):
-	trainingActivations = ac.activationsFromFile(trainingActivationsPath)
-else:
-	logger.error(trainingActivationsPath + " does not seem to be a npy-file with activations.")
-
-labelCount = len(trainingActivations[0][4096:])
-
-clusters = calculateKMeans(trainingActivations, labelCount)
-
-if testActivationsPath.endswith('.npy'):
-	testActivations = ac.activationsFromFile(testActivationsPath)
-else:
-	logger.error(testActivations + " does not seem to be a npy-file with activations.")
-
-testKMeans(testActivations, clusters)
+   evaluateKMeans(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
