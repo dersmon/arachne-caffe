@@ -9,14 +9,10 @@ import matplotlib.pyplot as plt
 
 logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
-def loadArray(path):
-   with open(path, "r") as outputFile:
-      return np.load(outputFile)
+logger.setLevel(logging.INFO)
 
 def plotPositions(positions, additionalRows, targetPath):
-   positionsExtended = np.repeat(positions, [additionalRows]*clusters.shape[0], axis=0)
+   positionsExtended = np.repeat(positions, [additionalRows]*positions.shape[0], axis=0)
    plt.imshow(positionsExtended, 'afmhot', interpolation='none')
 
    ax = plt.gca()
@@ -80,7 +76,7 @@ if __name__ == '__main__':
    if len(sys.argv) == 6:
       labels = utility.getLabelStrings(sys.argv[5])
 
-   clusters = loadArray(sys.argv[1])
+   clusters = utility.arrayFromFile(sys.argv[1])
    iterations = loadArray(sys.argv[2])
    neurons = int(sys.argv[3])
 
