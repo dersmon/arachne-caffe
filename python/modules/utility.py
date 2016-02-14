@@ -38,3 +38,5 @@ def plotConfusionMatrix(confusionMatrix, labels, evaluationTargetPath):
 
    plt.imshow(scaled, 'Blues', interpolation='none')
    plt.savefig(evaluationTargetPath + 'confusionMatrix.pdf', bbox_inches='tight')
+
+   plt.close()
