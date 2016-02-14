@@ -80,7 +80,7 @@ def kMeansIteration(clusters, activations, firstLabelIndex):
       logger.debug('Updated position shape: ' + str(updatedPosition.shape))
       if membersIndices.size == 0: # this cluster has no members assigned, create empty members and keep old position
          logger.info('Cluster without members.')
-         memberLabelHistogram = np.zeros((1, activations.shape[1] - firstLabelIndex))
+         memberLabelHistogram = np.zeros((activations.shape[1] - firstLabelIndex))
          logger.info('Histogram: ' + str(memberLabelHistogram))
          membersIndices = []
          updatedPosition = cluster['position']
