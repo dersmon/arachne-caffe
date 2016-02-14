@@ -157,7 +157,7 @@ def testClusters(clusters, activations, labels, targetPath):
    # logger.info('Mean average precision:')
    # logger.info(meanAveragePrecision)
 
-def evaluateKMeans(trainingActivationsPath, testActivationsPath, labelIndexMappingPath, targetFolder, subfolderPrefix):
+def generateKMeansSeries(trainingActivationsPath, testActivationsPath, labelIndexMappingPath, targetFolder, subfolderPrefix):
    if targetFolder.endswith('/') == False:
       targetFolder += '/'
 
@@ -204,4 +204,4 @@ if __name__ == '__main__':
       logger.info("5) Prefix for result folders.")
       sys.exit();
 
-   evaluateKMeans(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
+   generateKMeansSeries(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
