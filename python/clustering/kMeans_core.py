@@ -105,3 +105,20 @@ def saveResults(clusters, iterations, targetPath):
       np.save(outputFile, data)
    with open(targetPath + '_means_iterations.npy', "w") as outputFile:
       np.save(outputFile, iterations)
+
+def predictSimple(clusters, activation, neurons):
+   distances = [[] for i in range(len(clusters))]
+
+   clusterCounter = 0
+
+   for cluster in clusters:
+      difference = activation[0:neurons] - cluster[0:neurons]
+      distances[clusterCounter] = np.linalg.norm(difference)
+      clusterCounter += 1
+
+   clusterRanking = np.argsort(distances)
+
+   return clusterRanking
+
+def predictBayes(clusters, activations, labels, targetPath):
+   logger.info('Todo.')
