@@ -37,6 +37,6 @@ def plotConfusionMatrix(confusionMatrix, labels, evaluationTargetPath):
    ax.set_xticklabels(labels, rotation=45, ha='right')
 
    plt.imshow(scaled, 'Blues', interpolation='none')
-   plt.savefig(evaluationTargetPath + 'confusionMatrix.pdf', bbox_inches='tight')
+   plt.savefig(evaluationTargetPath, bbox_inches='tight')
 
    plt.close()
