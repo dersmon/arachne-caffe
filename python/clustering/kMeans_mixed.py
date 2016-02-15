@@ -12,9 +12,9 @@ logger.setLevel(logging.INFO)
 MAX_ITERATIONS = 150
 
 def findKMeans(activations, k, labelCount, targetPath):
-   logger.info("Running KMeans.")
+   logger.info("Running mixed KMeans, please wait...")
    [clusters, iterations] = kMeans_core.runKMeans(activations, labelCount, k, MAX_ITERATIONS)
-   kMeans_core.saveResults(clusters, iterations, targetPath + 'mixed_' + str(k))
+   kMeans_core.saveResults(clusters, iterations, targetPath)
    return [clusters, iterations]
 
 if __name__ == '__main__':

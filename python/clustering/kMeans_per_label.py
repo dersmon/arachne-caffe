@@ -51,7 +51,7 @@ def findKMeansPerLabel(activations, k, labelCount, targetPath, indexLabelMapping
       iterations.append(i)
       counter += 1
 
-   kMeans_core.saveResults(clusters, iterations, targetPath + 'per_label_' + str(k))
+   kMeans_core.saveResults(clusters, iterations, targetPath)
 
    return [clusters, iterations]
 
