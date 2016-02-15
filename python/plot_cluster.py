@@ -28,31 +28,23 @@ def plotLabelGrid(clusterLabelHistograms, labelCount, labels, targetPath):
    ax = plt.gca()
    scaled = (clusterLabelHistograms.T / maxValue).T
 
-   # for(j,i),label in np.ndenumerate(clusterLabelHistograms):
-   #    ax.text(i,j, int(label), ha='center', va='center', color='black',  fontsize=8)
+   labelTicks = np.arange(0, labelCount * (scaled.shape[0] / labelCount))
 
-   labelTicks = np.arange(labelCount)
-
-   if labels == None:
-      labels = np.arange(0,labelCount)
+   if labels == None or labelCount <= scaled.shape[0] * 0.75:
+      labels = np.arange(0, labelCount)
 
    ax.set_ylabel('Labels')
    ax.set_yticks(labelTicks)
    ax.set_yticklabels(labels)
 
    ax.set_xlabel('Clusters')
-   # ax.set_xticks(np.arange(0, clusterLabelHistograms.shape[1]))
-   # if len(labels) <= clusterLabelHistograms.shape[1]:
-   #    ax.set_xticklabels(np.arange(0, clusterLabelHistograms.shape[1]), rotation=45, ha='right')
-   # else:
-   #    ax.set_xticklabels(np.arange(0, clusterLabelHistograms.shape[1]))
 
    plt.imshow(scaled, 'Blues', interpolation='none')
-   plt.savefig(targetPath + 'matrix.pdf', bbox_inches='tight')
+   plt.savefig(targetPath + 'confusion_cluster.pdf', bbox_inches='tight')
    plt.close()
 
 def plotClusters(clusters, iterations, neurons, targetPath):
-   evaluateClusters(clusters, iterations, neurons, targetPath, None)
+   plotClusters(clusters, iterations, neurons, targetPath, None)
 
 def plotClusters(clusters, iterations, neurons, targetPath, labels):
    logger.debug(clusters.shape)
