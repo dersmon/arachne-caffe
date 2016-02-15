@@ -1,16 +1,50 @@
 import sys
 import os
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 import numpy as np
+import logging
 
 import modules.utility as utility
 import clustering.kMeans_core as kMeans_core
 
-import logging
+
 
 logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
+def plotOverview(data, targetPath):
+
+   if targetPath.endswith('/') == False:
+      targetPath += '/'
+   if not os.path.exists(os.path.dirname(targetPath)):
+      os.makedirs(os.path.dirname(targetPath))
+   # [cluster['k'], meanAveragePrecision, overallCorrect, overallWrong]
+   counter = 0
+   data = data[data[:,0].argsort()]
+   logger.debug(data.shape)
+   logger.debug(data)
+   k = data[:,0]
+
+   meanaverageprecision = data[:,1]
+   correct = data[:,2] / (data[:,2] + data[:,3])
+
+   fig, ax = plt.subplots()
+
+   ax.plot(k, correct, 'gx', k, meanaverageprecision, 'bo')
+
+   ax.set_xlabel('K')
+   ax.axis([k[0], k[::-1][0], 0, 1])
+   ax.grid(True)
+
+   labelTrainingLoss = mpatches.Patch(color='g', label='Accuracy')
+   labelTestLoss = mpatches.Patch(color='b', label='Mean average precision')
+
+   plt.legend(handles=[labelTrainingLoss, labelTestLoss])
+   plt.savefig(targetPath + 'result.pdf', bbox_inches='tight')
+   plt.close()
+
 
 def testSimple(clusters, activations, labels):
 
@@ -90,18 +124,43 @@ def runTests(activationsPath, indexLabelMappingPath, sourcePath, sourcePrefix):
       sourcePath += '/'
 
    clusters = []
-   for root, subdirs, files in os.walk(sourcePath):
-      if root.split('/')[len(root.split('/'))-1].startswith(sourcePrefix):
-         logger.debug('Correct root: ' + root)
+   for rootPath, subdirs, files in os.walk(sourcePath):
+      if rootPath.split('/')[len(rootPath.split('/'))-1].startswith(sourcePrefix):
+         logger.debug('Correct root: ' + rootPath)
          for f in files:
-            if f.endswith('_clusters.npy'):
+            if f.endswith('clusters.npy'):
                logger.debug('Found clusters file: ' + f)
-               clusters.append({'path':root + '/' +  f, 'data':utility.arrayFromFile(root + '/' +  f)})
+
+               # Type and k are parsed from root folder ending.
+               split = rootPath.split('/')[::-1][0].split('_')
+               splitLength = len(split)
+               logger.debug(split)
+               k = split[splitLength - 1]
+               clusteringType = split[splitLength - 2]
+
+               logger.debug(k)
+               logger.debug(clusteringType)
+
+               clusters.append({'file': f,'path':rootPath + '/', 'data':utility.arrayFromFile(rootPath + '/' +  f), 'k':int(k), 'type':clusteringType})
+
+   mixedClusterResultsSimple = []
+   perLabelClusterResultsSimple = []
 
    for cluster in clusters:
 
+      logger.info("Evaluating clusters at " + cluster['path'])
       [confusionMatrix, meanAveragePrecision, overallCorrect, overallWrong] = testSimple(cluster['data'], activations, labels) # (clusters, activations, labels)
-      utility.plotConfusionMatrix(confusionMatrix, labels, cluster['path'])
+
+      if(cluster['type'] == 'perLabel'):
+         perLabelClusterResultsSimple.append([cluster['k'], meanAveragePrecision, overallCorrect, overallWrong])
+      else:
+         mixedClusterResultsSimple.append([cluster['k'], meanAveragePrecision, overallCorrect, overallWrong])
+
+      utility.plotConfusionMatrix(confusionMatrix, labels, cluster['path'] + "confusion_test.pdf")
+
+   plotOverview(np.array(mixedClusterResultsSimple), sourcePath + 'result_mixed/')
+   plotOverview(np.array(perLabelClusterResultsSimple), sourcePath + 'perLabel/')
+   # plot overview results
 
 if __name__ == '__main__':
    if len(sys.argv) != 5:
