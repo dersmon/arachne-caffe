@@ -3,7 +3,7 @@ import os
 import sys
 import logging
 import matplotlib.pyplot as plt
-import modules.arachne_caffe as ac
+import modules.utility
 
 logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -17,8 +17,7 @@ def getLabelStrings(filePath):
 
    return result
 
-def plotActivations(activations, labelCount, indexLabelMappingPath, plotFileName):
-
+def plotOverview(activations, labelCount, indexLabelMappingPath, plotFileName):
    firstLabelIndex = activations.shape[1] - labelCount
    reduceActivationsBy = 1
    if firstLabelIndex % 4 == 0 and firstLabelIndex > 1024:
@@ -63,27 +62,41 @@ def plotActivations(activations, labelCount, indexLabelMappingPath, plotFileName
    ax.set_yticklabels(tickLabels)
 
    plt.savefig(plotFileName)
-   plt.show()
+
+def plotLabelSummaries():
+   logger.info('Todo...')
+
+def plotActivations(activations, labelCount, targetFolder, indexLabelMappingPath):
+   plotOverview(activations, labelCount, indexLabelMappingPath, targetFolder + '_overview.pdf')
+   plotLabelSummaries()
 
 if __name__ == '__main__':
 
    indexLabelMappingPath = None
 
    activationsPath = ""
-   if len(sys.argv) != 3 and len(sys.argv) != 4:
+   if len(sys.argv) != 4 and len(sys.argv) != 5:
       logger.info("Please provide as argument:")
       logger.info("1) npy-file with activations.")
       logger.info("2) The the number of neurons.")
+      logger.info("3) The target path.")
       logger.info("3) The path to the index label mapping (optional).")
       sys.exit()
 
    activationsPath = sys.argv[1]
    neurons = int(sys.argv[2])
+   targetPath = sys.argv[3]
 
-   if len(sys.argv) == 4:
-       indexLabelMappingPath = sys.argv[3]
+   if len(sys.argv) == 5:
+       indexLabelMappingPath = sys.argv[4]
 
-   activations = ac.activationsFromFile(activationsPath)
+   activations = utility.arrayFromFile(activationsPath)
+
+   if targetPath.endswith('/') == False:
+      targetPath += '/'
+
+   if not os.path.exists(os.path.dirname(targetPath)):
+      os.makedirs(os.path.dirname(targetPath))
 
    labelCount = activations[0,neurons:].shape[0]
-   plotActivations(activations, labelCount, indexLabelMappingPath, os.path.splitext(activationsPath)[0] + '_plot.pdf')
+   plotActivations(activations, labelCount, targetPath, indexLabelMappingPath)
