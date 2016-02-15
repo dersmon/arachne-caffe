@@ -21,45 +21,53 @@ MAX_ITERATIONS_PER_LABEL = 150
 MAX_ITERATIONS_MIXED = 150
 
 PER_LABEL_START = 1
-PER_LABEL_END = 12
+PER_LABEL_END = 18
 
-MIXED_START = 5
+MIXED_START = 15
 MIXED_STEP = 5
-MIXED_END = 120
+MIXED_END = 75
 
+RUNS_PER_TYPE = 4
 
-
-def generateKMeansSeries(activations, labelIndexMappingPath, targetFolder, subfolderPrefix):
+def generateKMeansSeries(activationsPath, labelIndexMappingPath, targetFolder, subfolderPrefix):
    if targetFolder.endswith('/') == False:
       targetFolder += '/'
 
-   activations = utility.arrayFromFile(trainingActivationsPath)
+   activations = utility.arrayFromFile(activationsPath)
    labels = utility.getLabelStrings(labelIndexMappingPath)
    neurons = activations.shape[1] - len(labels)
 
    # test per label k-means
    k = PER_LABEL_START
-   while k < PER_LABEL_END:
-      logger.info("Testing per label KMeans with k = " + str(k) + ".")
-      currentTarget = targetFolder + subfolderPrefix + "_perLabel_" + str(k) + "/"
-      if not os.path.exists(os.path.dirname(currentTarget)):
-         os.makedirs(os.path.dirname(currentTarget))
+   while k <= PER_LABEL_END:
+      runCounter = 0
+      while runCounter < RUNS_PER_TYPE:
 
-      c, i = kMeans_per_label.findKMeansPerLabel(activations, k, len(labels), currentTarget, labelIndexMappingPath)
-      plot_cluster.plotClusters(kMeans_core.cleanUp(c), i, neurons, currentTarget, labels[:len(labels)])
+         logger.info("Testing per label KMeans with k = " + str(k) + ".")
+         currentTarget = targetFolder + subfolderPrefix + "_run_" + str(runCounter) + "_perLabel_" + str(k) + "/"
+         if not os.path.exists(os.path.dirname(currentTarget)):
+            os.makedirs(os.path.dirname(currentTarget))
 
+         c, i = kMeans_per_label.findKMeansPerLabel(activations, k, len(labels), currentTarget, labelIndexMappingPath)
+         plot_cluster.plotClusters(kMeans_core.cleanUp(c), i, neurons, currentTarget, labels[:len(labels)])
+         runCounter += 1
       k += 1
+
 
    # test mixed k-means
    k = MIXED_START
-   while k < MIXED_END:
-      logger.info("Testing mixed KMeans with k = " + str(k) + ".")
-      currentTarget = targetFolder + subfolderPrefix + "_mixed_" + str(k) + "/"
-      if not os.path.exists(os.path.dirname(currentTarget)):
-         os.makedirs(os.path.dirname(currentTarget))
-      [c,i] = kMeans_mixed.findKMeans(activations, k, len(labels), currentTarget)
-      plot_cluster.plotClusters(kMeans_core.cleanUp(c), i, trainingActivations.shape[1] - len(labels), currentTarget, labels[:len(labels)])
+   while k <= MIXED_END:
+      runCounter = 0
+      while runCounter < RUNS_PER_TYPE:
 
+         logger.info("Testing mixed KMeans with k = " + str(k) + ".")
+         currentTarget = targetFolder + subfolderPrefix + "_run_" + str(runCounter) + "_mixed_" + str(k) + "/"
+         if not os.path.exists(os.path.dirname(currentTarget)):
+            os.makedirs(os.path.dirname(currentTarget))
+
+         [c,i] = kMeans_mixed.findKMeans(activations, k, len(labels), currentTarget)
+         plot_cluster.plotClusters(kMeans_core.cleanUp(c), i, activations.shape[1] - len(labels), currentTarget, labels[:len(labels)])
+         runCounter += 1
       k += MIXED_STEP
 
 if __name__ == '__main__':
