@@ -43,7 +43,7 @@ def generateKMeansSeries(activationsPath, labelIndexMappingPath, targetFolder, s
       runCounter = 0
       while runCounter < RUNS_PER_TYPE:
 
-         logger.info("Testing per label KMeans with k = " + str(k) + ".")
+         logger.info("Calculating per label KMeans with k = " + str(k) + ".")
          currentTarget = targetFolder + subfolderPrefix + "_run_" + str(runCounter) + "_perLabel_" + str(k) + "/"
          if not os.path.exists(os.path.dirname(currentTarget)):
             os.makedirs(os.path.dirname(currentTarget))
@@ -60,7 +60,7 @@ def generateKMeansSeries(activationsPath, labelIndexMappingPath, targetFolder, s
       runCounter = 0
       while runCounter < RUNS_PER_TYPE:
 
-         logger.info("Testing mixed KMeans with k = " + str(k) + ".")
+         logger.info("Calculating mixed KMeans with k = " + str(k) + ".")
          currentTarget = targetFolder + subfolderPrefix + "_run_" + str(runCounter) + "_mixed_" + str(k) + "/"
          if not os.path.exists(os.path.dirname(currentTarget)):
             os.makedirs(os.path.dirname(currentTarget))
