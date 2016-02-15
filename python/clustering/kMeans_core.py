@@ -4,7 +4,7 @@ import logging
 
 logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 def runKMeans(activations, labelCount, clusterCount, maxIterations):
 
@@ -37,7 +37,13 @@ def runKMeans(activations, labelCount, clusterCount, maxIterations):
 
       iteration += 1
 
-   return [clusters, iteration]
+   filteredClusters = [] # filter cluster without members at the end
+   for cluster in clusters:
+      if(len(cluster['memberIndices']) != 0):
+         filteredClusters.append(cluster)
+
+
+   return [filteredClusters, iteration]
 
 def kMeansIteration(clusters, activations, firstLabelIndex):
 
@@ -101,9 +107,9 @@ def cleanUp(clusters):
 
 def saveResults(clusters, iterations, targetPath):
    data = cleanUp(clusters)
-   with open(targetPath + '_means_clusters.npy', "w") as outputFile:
+   with open(targetPath + 'clusters.npy', "w") as outputFile:
       np.save(outputFile, data)
-   with open(targetPath + '_means_iterations.npy', "w") as outputFile:
+   with open(targetPath + 'iterations.npy', "w") as outputFile:
       np.save(outputFile, iterations)
 
 def predictSimple(clusters, activation, neurons):
