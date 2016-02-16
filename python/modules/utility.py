@@ -2,6 +2,8 @@ import logging
 import numpy as np
 import matplotlib.pyplot as plt
 
+import matplotlib.patches as mpatches
+
 logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -20,7 +22,7 @@ def arrayFromFile(filePath):
    with open(filePath, 'r') as inputFile:
       return np.load(inputFile)
 
-def plotConfusionMatrix(confusionMatrix, labels, evaluationTargetPath):
+def plotConfusionMatrix(confusionMatrix, labels, targetPath):
    maxValue = np.max(confusionMatrix, axis=1)
 
    ax = plt.gca()
@@ -36,7 +38,69 @@ def plotConfusionMatrix(confusionMatrix, labels, evaluationTargetPath):
    ax.set_xticks(ticks)
    ax.set_xticklabels(labels, rotation=45, ha='right')
 
-   plt.imshow(scaled, 'Blues', interpolation='none')
-   plt.savefig(evaluationTargetPath, bbox_inches='tight')
+   # diagonal = np.diag(np.diag(scaled))
+   # correct = np.ma.masked_array(scaled, mask=(diagonal==0))
+   # false = np.ma.masked_array(scaled, mask=(diagonal!=0))
+   # logger.debug(scaled)
+   # logger.debug(diagonal)
+   # logger.debug(correct)
+   # logger.debug(correct)
+   # logger.debug(false)
+   #
+   # logger.debug(false.shape)
+   # logger.debug(scaled.shape)
+   # logger.debug((correct == 0).shape)
+   # pa = ax.imshow(correct, cmap='Greens', interpolation='none')
+   # pb = ax.imshow(false, cmap='Reds', interpolation='none')
 
+   plt.imshow(scaled, 'Blues', interpolation='none')
+   plt.savefig(targetPath, bbox_inches='tight')
+
+   plt.close()
+
+def plotKMeansOverview(data, targetPath):
+
+   data = data[data[:,0].argsort()]
+
+   k = data[:,0]
+
+   uniqueK = np.unique(k)
+
+   logger.debug(uniqueK)
+   counter = 0
+   summed = []
+   while counter < uniqueK.shape[0]:
+      currentK = uniqueK[counter]
+      logger.debug("Original shape: " + str(data[data[:,0] == currentK].shape))
+      currentSum = np.sum(data[data[:,0] == currentK], axis=0)
+      logger.debug("Summed shape: " + str(currentSum.shape))
+      currentSum = currentSum / data[data[:,0] == currentK].shape[0]
+
+      summed.append(currentSum)
+      counter += 1
+
+   summed = np.array(summed)
+   meanAveragePrecision = data[:,1]
+
+   correct = data[:,2] / (data[:,2] + data[:,3])
+
+
+
+   fig, ax = plt.subplots()
+
+   maximumPrecision = np.argmax(meanAveragePrecision)
+   maximumAccuracy = np.argmax(correct)
+
+   ax.plot(k, correct, 'go', k, meanAveragePrecision, 'bo')
+   ax.plot(summed[:,0], summed[:,2] / (summed[:,2] + summed[:,3]), 'g', summed[:,0], summed[:,1], 'b')
+   ax.plot((k[0], k[::-1][0]),(correct[maximumAccuracy],correct[maximumAccuracy]), 'g--', (k[0], k[::-1][0]),(meanAveragePrecision[maximumPrecision],meanAveragePrecision[maximumPrecision]), 'b--')
+   ax.set_xlabel('K')
+   ax.axis([k[0], k[::-1][0], 0, 1])
+   ax.grid(True)
+
+   labelTrainingLoss = mpatches.Patch(color='g', label='Accuracy')
+   labelTestLoss = mpatches.Patch(color='b', label='Mean average precision')
+
+   plt.legend(handles=[labelTrainingLoss, labelTestLoss])
+   plt.savefig(targetPath, bbox_inches='tight')
    plt.close()
