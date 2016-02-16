@@ -30,13 +30,12 @@ def plotLabelGrid(clusterLabelHistograms, labelCount, labels, targetPath):
 
    labelTicks = np.arange(0, labelCount * (scaled.shape[0] / labelCount))
 
-   if labels == None or labelCount <= scaled.shape[0] * 0.75:
+   if labels != None and scaled.shape[0] > scaled.shape[1] * 0.75:
       labels = np.arange(0, labelCount)
+      ax.set_yticks(labelTicks)
+      ax.set_yticklabels(labels)
 
    ax.set_ylabel('Labels')
-   ax.set_yticks(labelTicks)
-   ax.set_yticklabels(labels)
-
    ax.set_xlabel('Clusters')
 
    plt.imshow(scaled, 'Blues', interpolation='none')
