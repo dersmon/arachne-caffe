@@ -15,8 +15,11 @@ logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+# SOURCE_DIMENSIONS = 1183
 SOURCE_DIMENSIONS = 4096
 SAVE_RESTORED = True
+
+pcaComponentsPath = None
 
 def meanNormalization(activations):
    logger.debug("Normalizing...")
@@ -37,21 +40,21 @@ def getSVU(activations, activationsSourcePath):
    logger.debug('s vector shape: ' + str(s.shape))
    logger.debug('V matrix shape: ' + str(V.shape))
 
-   singularValuesFile = os.path.splitext(activationsSourcePath)[0] + "_singular.npy"
+   singularValuesFile = pcaComponentsPath + os.path.splitext(activationsSourcePath)[0] + "_singular.npy"
 
    if not os.path.exists(os.path.dirname(singularValuesFile)):
       os.makedirs(os.path.dirname(singularValuesFile))
    with open(singularValuesFile, "w") as outputFile:
       np.save(outputFile, s)
 
-   unitaryMatrixFile = os.path.splitext(activationsSourcePath)[0] + "_unitary_matrix_V.npy"
+   unitaryMatrixFile = pcaComponentsPath + os.path.splitext(activationsSourcePath)[0] + "_unitary_matrix_V.npy"
 
    if not os.path.exists(os.path.dirname(unitaryMatrixFile)):
       os.makedirs(os.path.dirname(unitaryMatrixFile))
    with open(unitaryMatrixFile, "w") as outputFile:
       np.save(outputFile, V)
 
-   unitaryMatrixFile = os.path.splitext(activationsSourcePath)[0] + "_unitary_matrix_U.npy"
+   unitaryMatrixFile = pcaComponentsPath + os.path.splitext(activationsSourcePath)[0] + "_unitary_matrix_U.npy"
 
    if not os.path.exists(os.path.dirname(unitaryMatrixFile)):
       os.makedirs(os.path.dirname(unitaryMatrixFile))
@@ -61,7 +64,7 @@ def getSVU(activations, activationsSourcePath):
    return [s, V, U]
 
 def findOptimalDimensionCount(singularValuesMatrix):
-   logger.info("Searching viable k dimensions to reduce...")
+   logger.info("Searching viable k dimensions to reduce to...")
 
    k = 1
    nSum = np.sum(singularValuesMatrix)
@@ -82,26 +85,34 @@ if __name__ == '__main__':
    s = None
    U = None
    V = None
-
    trainingActivationsPath = ''
-   if(len(sys.argv) != 2 and len(sys.argv) != 5):
+   if(len(sys.argv) != 3 and len(sys.argv) != 6):
       logger.info("Please provide as arguments:")
       logger.info("1) path to activations as npy file.")
+      logger.info("2) K dimensions to omit (0 if algorithm should make decision).")
       logger.info("2) path to singular values matrix (*.npy) (optional).")
       logger.info("3) path to V Matrix (*.npy) (optional).")
       logger.info("4) path to U Matrix (*.npy) (optional)")
       logger.info("Please provide all matrixes or none.")
       sys.exit()
-   else:
-      trainingActivationsPath = sys.argv[1]
-      sourceActivations = ac.activationsFromFile(trainingActivationsPath)
-      if(len(sys.argv) == 5):
-         with open(sys.argv[2], 'r') as inputFile:
-            s = np.load(inputFile)
-         with open(sys.argv[3], 'r') as inputFile:
-            V = np.load(inputFile)
-         with open(sys.argv[4], 'r') as inputFile:
-            U = np.load(inputFile)
+
+   logger.info("Expecting " + str(SOURCE_DIMENSIONS) + " source neurons.")
+
+   trainingActivationsPath = sys.argv[1]
+
+   pcaComponentsPath = os.path.dirname(trainingActivationsPath) + "pca/"
+   if not os.path.exists(os.path.dirname(pcaComponentsPath)):
+      os.makedirs(os.path.dirname(pcaComponentsPath))
+
+   k = int(sys.argv[2])
+   sourceActivations = ac.activationsFromFile(trainingActivationsPath)
+   if(len(sys.argv) == 6):
+      with open(sys.argv[3], 'r') as inputFile:
+         s = np.load(inputFile)
+      with open(sys.argv[4], 'r') as inputFile:
+         V = np.load(inputFile)
+      with open(sys.argv[5], 'r') as inputFile:
+         U = np.load(inputFile)
 
    if(sourceActivations == None):
       logger.error("Could not load activations, exiting.")
@@ -112,8 +123,9 @@ if __name__ == '__main__':
    if(s == None):
       [s,V,U] = getSVU(activations, trainingActivationsPath)
 
-   k = findOptimalDimensionCount(s)
-   logger.info("Optimal k: " + str(k))
+   if k == 0:
+      k = findOptimalDimensionCount(s)
+      logger.info("Found k: " + str(k))
 
    S = np.diag(s[:k])
 
@@ -135,6 +147,7 @@ if __name__ == '__main__':
    reducedActivationsPath = os.path.splitext(trainingActivationsPath)[0] + "_reduced_" + str(reduced.shape[1]) + ".npy"
    reduced = np.hstack((reduced, sourceActivations[:,SOURCE_DIMENSIONS:]))
 
+
    logger.info('Writing file: ' + reducedActivationsPath)
    if not os.path.exists(os.path.dirname(reducedActivationsPath)):
       os.makedirs(os.path.dirname(reducedActivationsPath))
@@ -142,7 +155,7 @@ if __name__ == '__main__':
       np.save(outputFile, reduced)
 
    if SAVE_RESTORED:
-      restoredActivationsPath = os.path.splitext(trainingActivationsPath)[0] + "_restored_" + str(restored.shape[1]) + ".npy"
+      restoredActivationsPath = pcaComponentsPath + os.path.splitext(trainingActivationsPath)[0] + "_restored_" + str(restored.shape[1]) + ".npy"
       restored = np.hstack((restored, sourceActivations[:,SOURCE_DIMENSIONS:]))
 
       logger.info('Writing file: ' + restoredActivationsPath)
