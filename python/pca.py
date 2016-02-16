@@ -13,13 +13,14 @@ import modules.arachne_caffe as ac
 
 logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 # SOURCE_DIMENSIONS = 1183
 SOURCE_DIMENSIONS = 4096
-SAVE_RESTORED = True
+CREATE_RESTORED = False
 
-pcaComponentsPath = None
+PCA_SUBFOLDER_PATH = None
+FILENAME_WITHOUT_EXTENSION = None
 
 def meanNormalization(activations):
    logger.debug("Normalizing...")
@@ -40,24 +41,18 @@ def getSVU(activations, activationsSourcePath):
    logger.debug('s vector shape: ' + str(s.shape))
    logger.debug('V matrix shape: ' + str(V.shape))
 
-   singularValuesFile = pcaComponentsPath + os.path.splitext(activationsSourcePath)[0] + "_singular.npy"
+   singularValuesFile = PCA_SUBFOLDER_PATH + FILENAME_WITHOUT_EXTENSION + "_singular.npy"
 
-   if not os.path.exists(os.path.dirname(singularValuesFile)):
-      os.makedirs(os.path.dirname(singularValuesFile))
    with open(singularValuesFile, "w") as outputFile:
       np.save(outputFile, s)
 
-   unitaryMatrixFile = pcaComponentsPath + os.path.splitext(activationsSourcePath)[0] + "_unitary_matrix_V.npy"
+   unitaryMatrixFile = PCA_SUBFOLDER_PATH + FILENAME_WITHOUT_EXTENSION + "_unitary_matrix_V.npy"
 
-   if not os.path.exists(os.path.dirname(unitaryMatrixFile)):
-      os.makedirs(os.path.dirname(unitaryMatrixFile))
    with open(unitaryMatrixFile, "w") as outputFile:
       np.save(outputFile, V)
 
-   unitaryMatrixFile = pcaComponentsPath + os.path.splitext(activationsSourcePath)[0] + "_unitary_matrix_U.npy"
+   unitaryMatrixFile = PCA_SUBFOLDER_PATH + FILENAME_WITHOUT_EXTENSION + "_unitary_matrix_U.npy"
 
-   if not os.path.exists(os.path.dirname(unitaryMatrixFile)):
-      os.makedirs(os.path.dirname(unitaryMatrixFile))
    with open(unitaryMatrixFile, "w") as outputFile:
       np.save(outputFile, U)
 
@@ -100,9 +95,13 @@ if __name__ == '__main__':
 
    trainingActivationsPath = sys.argv[1]
 
-   pcaComponentsPath = os.path.dirname(trainingActivationsPath) + "pca/"
-   if not os.path.exists(os.path.dirname(pcaComponentsPath)):
-      os.makedirs(os.path.dirname(pcaComponentsPath))
+   PCA_SUBFOLDER_PATH = os.path.dirname(trainingActivationsPath) + "/pca/"
+   FILENAME_WITHOUT_EXTENSION = os.path.splitext(trainingActivationsPath)[0].split('/')[-1]
+
+   if not os.path.exists(os.path.dirname(PCA_SUBFOLDER_PATH)):
+      os.makedirs(os.path.dirname(PCA_SUBFOLDER_PATH))
+
+   logger.info("Path for matrices and restored activations: " + PCA_SUBFOLDER_PATH)
 
    k = int(sys.argv[2])
    sourceActivations = ac.activationsFromFile(trainingActivationsPath)
@@ -119,6 +118,7 @@ if __name__ == '__main__':
       sys.exit()
 
    activations = sourceActivations[:,0:SOURCE_DIMENSIONS]
+   logger.info('Original shape: ' + str(activations.shape))
 
    if(s == None):
       [s,V,U] = getSVU(activations, trainingActivationsPath)
@@ -129,24 +129,26 @@ if __name__ == '__main__':
 
    S = np.diag(s[:k])
 
+
    reduced = np.dot(S, U[:,:k].T).T
-   logger.debug('reduced: ' + str(reduced.shape))
-   restored = np.dot(reduced, V[:k,:])
-   logger.debug('restored: ' + str(restored.shape))
+   logger.info('Reduced shape: ' + str(reduced.shape))
+   restored = None
+   if CREATE_RESTORED:
+      restored = np.dot(reduced, V[:k,:])
+   # logger.debug('restored: ' + str(restored.shape))
 
    absDiffMatrix = np.absolute(activations - restored)
 
-   logger.debug('Sum original activations: ' + str(np.sum(np.absolute(activations))))
-   logger.debug('Sum restored activations: ' + str(np.sum(np.absolute(restored))))
+   # logger.debug('Sum original activations: ' + str(np.sum(np.absolute(activations))))
+   # logger.debug('Sum restored activations: ' + str(np.sum(np.absolute(restored))))
 
    absDiffMatrix = np.absolute(activations - restored)
-   logger.debug('Median in np.absolute(activations - restored): ' + str(np.median(absDiffMatrix)))
-   logger.debug('Min/max value in np.absolute(activations - restored): ' + str(np.amin(absDiffMatrix))+ '/' + str(np.amax(absDiffMatrix)))
-   logger.debug('Sum np.absolute(activations - restored): ' + str(np.sum(absDiffMatrix)))
+   # logger.debug('Median in np.absolute(activations - restored): ' + str(np.median(absDiffMatrix)))
+   # logger.debug('Min/max value in np.absolute(activations - restored): ' + str(np.amin(absDiffMatrix))+ '/' + str(np.amax(absDiffMatrix)))
+   # logger.debug('Sum np.absolute(activations - restored): ' + str(np.sum(absDiffMatrix)))
 
    reducedActivationsPath = os.path.splitext(trainingActivationsPath)[0] + "_reduced_" + str(reduced.shape[1]) + ".npy"
    reduced = np.hstack((reduced, sourceActivations[:,SOURCE_DIMENSIONS:]))
-
 
    logger.info('Writing file: ' + reducedActivationsPath)
    if not os.path.exists(os.path.dirname(reducedActivationsPath)):
@@ -154,12 +156,10 @@ if __name__ == '__main__':
    with open(reducedActivationsPath, "w") as outputFile:
       np.save(outputFile, reduced)
 
-   if SAVE_RESTORED:
-      restoredActivationsPath = pcaComponentsPath + os.path.splitext(trainingActivationsPath)[0] + "_restored_" + str(restored.shape[1]) + ".npy"
+   if restored != None:
+      restoredActivationsPath = PCA_SUBFOLDER_PATH + FILENAME_WITHOUT_EXTENSION + "_restored_" + str(restored.shape[1]) + ".npy"
       restored = np.hstack((restored, sourceActivations[:,SOURCE_DIMENSIONS:]))
 
       logger.info('Writing file: ' + restoredActivationsPath)
-      if not os.path.exists(os.path.dirname(restoredActivationsPath)):
-         os.makedirs(os.path.dirname(restoredActivationsPath))
       with open(restoredActivationsPath, "w") as outputFile:
          np.save(outputFile, restored)
