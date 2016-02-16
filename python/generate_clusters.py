@@ -21,11 +21,11 @@ MAX_ITERATIONS_PER_LABEL = 150
 MAX_ITERATIONS_MIXED = 150
 
 PER_LABEL_START = 1
-PER_LABEL_END = 18
+PER_LABEL_END = 6
 
-MIXED_START = 15
+MIXED_START = 50
 MIXED_STEP = 5
-MIXED_END = 75
+MIXED_END = 0
 
 RUNS_PER_TYPE = 4
 
@@ -44,7 +44,7 @@ def generateKMeansSeries(activationsPath, labelIndexMappingPath, targetFolder, s
       while runCounter < RUNS_PER_TYPE:
 
          logger.info("Calculating per label KMeans with k = " + str(k) + ".")
-         currentTarget = targetFolder + subfolderPrefix + "_run_" + str(runCounter) + "_perLabel_" + str(k) + "/"
+         currentTarget = targetFolder + subfolderPrefix + "_perLabel_" + str(k) + "/" + "run_" + str(runCounter) + "_"
          if not os.path.exists(os.path.dirname(currentTarget)):
             os.makedirs(os.path.dirname(currentTarget))
 
