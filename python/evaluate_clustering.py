@@ -8,8 +8,6 @@ import logging
 import modules.utility as utility
 import clustering.kMeans_core as kMeans_core
 
-
-
 logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -34,7 +32,7 @@ def saveConfusionMatrix(confusionMatrix, targetPath):
 def getSumAndFactorPerLabel(clusters, neurons):
    allLabels = clusters[:,neurons:]
    sumPerLabel = np.sum(allLabels, axis=0) / allLabels.shape[0]
-   factorPerLabel = sumPerLabel / allLabels.shape[1]
+   factorPerLabel = np.max(sumPerLabel) / sumPerLabel
    return [sumPerLabel, factorPerLabel]
 
 def runTest(clusters, activations, labels, factorPerLabel):
