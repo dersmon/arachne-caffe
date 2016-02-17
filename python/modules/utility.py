@@ -1,12 +1,12 @@
 import logging
 import numpy as np
 import matplotlib.pyplot as plt
-
 import matplotlib.patches as mpatches
+import matplotlib.colors as colors
 
 logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 def getLabelStrings(filePath):
@@ -26,17 +26,17 @@ def plotConfusionMatrix(confusionMatrix, labels, targetPath):
    maxValue = np.max(confusionMatrix, axis=1)
 
    ax = plt.gca()
-   scaled = (confusionMatrix.T / maxValue).T
+   scaled = np.log(((confusionMatrix.T / maxValue).T) + 0.006)
 
    for(j,i),label in np.ndenumerate(confusionMatrix):
-      ax.text(i,j, int(label), ha='center', va='center', color='black',  fontsize=8)
+      ax.text(i,j, int(label), ha='center', va='center', color='black',  fontsize=6)
 
    ticks = np.arange(len(labels))
 
    ax.set_yticks(ticks)
-   ax.set_yticklabels(labels)
+   ax.set_yticklabels(labels, fontsize=6)
    ax.set_xticks(ticks)
-   ax.set_xticklabels(labels, rotation=45, ha='right')
+   ax.set_xticklabels(labels, fontsize=6, rotation=45, ha='right')
 
    # diagonal = np.diag(np.diag(scaled))
    # correct = np.ma.masked_array(scaled, mask=(diagonal==0))
@@ -52,8 +52,9 @@ def plotConfusionMatrix(confusionMatrix, labels, targetPath):
    # logger.debug((correct == 0).shape)
    # pa = ax.imshow(correct, cmap='Greens', interpolation='none')
    # pb = ax.imshow(false, cmap='Reds', interpolation='none')
-
-   plt.imshow(scaled, 'Blues', interpolation='none')
+   cmap = plt.get_cmap('Blues')
+   cmap_adjusted = colors.LinearSegmentedColormap.from_list('trunc(' + cmap.name +', ' + str(0) + ',' + str(1) + ')', cmap(np.linspace(0,0.8,100)))
+   plt.imshow(scaled, cmap=cmap_adjusted, interpolation='none')
    plt.savefig(targetPath, bbox_inches='tight')
 
    plt.close()
@@ -83,8 +84,6 @@ def plotKMeansOverview(data, targetPath):
    meanAveragePrecision = data[:,1]
 
    correct = data[:,2] / (data[:,2] + data[:,3])
-
-
 
    fig, ax = plt.subplots()
 
