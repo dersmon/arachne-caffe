@@ -14,42 +14,30 @@ logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-def plotOverview(data, targetPath):
-
+def saveOverview(data, targetPath):
    if targetPath.endswith('/') == False:
       targetPath += '/'
    if not os.path.exists(os.path.dirname(targetPath)):
       os.makedirs(os.path.dirname(targetPath))
-   # [cluster['k'], meanAveragePrecision, overallCorrect, overallWrong]
-   counter = 0
+
    data = data[data[:,0].argsort()]
-   k = data[:,0]
 
-   meanaverageprecision = data[:,1]
-   correct = data[:,2] / (data[:,2] + data[:,3])
+   targetPath += "overview.csv"
+   logger.info('Writing file ' + targetPath)
+   np.savetxt(targetPath, data, delimiter=',')
 
-   fig, ax = plt.subplots()
+def saveConfusionMatrix(confusionMatrix, targetPath):
+   logger.info('Writing file ' + targetPath)
+   with open(targetPath, "w") as outputFile:
+      np.save(outputFile, confusionMatrix)
 
-   ax.plot(k, correct, 'gx', k, meanaverageprecision, 'bo')
-
-   ax.set_xlabel('K')
-   ax.axis([k[0], k[::-1][0], 0, 1])
-   ax.grid(True)
-
-   labelTrainingLoss = mpatches.Patch(color='g', label='Accuracy')
-   labelTestLoss = mpatches.Patch(color='b', label='Mean average precision')
-
-   plt.legend(handles=[labelTrainingLoss, labelTestLoss])
-   plt.savefig(targetPath + 'result.pdf', bbox_inches='tight')
-   plt.close()
-
-def calculateFactorPerLabel(clusters, neurons):
+def getSumAndFactorPerLabel(clusters, neurons):
    allLabels = clusters[:,neurons:]
    sumPerLabel = np.sum(allLabels, axis=0) / allLabels.shape[0]
    factorPerLabel = sumPerLabel / allLabels.shape[1]
-   return factorPerLabel
+   return [sumPerLabel, factorPerLabel]
 
-def testSimple(clusters, activations, labels, factorPerLabel):
+def runTest(clusters, activations, labels, factorPerLabel):
 
    labelCount = len(labels)
    neurons = activations.shape[1] - labelCount
@@ -113,15 +101,11 @@ def testSimple(clusters, activations, labels, factorPerLabel):
       confusionMatrix[labelIndex,:] = confusion
 
 
-   logger.info('Exact prediction:')
-   logger.info('correct: ' + str(overallCorrect) + ', wrong: ' + str(overallWrong) + ', ratio: ' + str(float(overallCorrect)/(overallWrong + overallCorrect)))
-
+   logger.info(' Accuracy: ' + str(float(overallCorrect)/(overallWrong + overallCorrect)))
    meanAveragePrecision = float(meanAveragePrecision) / activations.shape[0]
-   logger.info('Mean average precision:')
-   logger.info(meanAveragePrecision)
+   logger.info(' Mean average precision: '+str(meanAveragePrecision))
 
    return [confusionMatrix, meanAveragePrecision, overallCorrect, overallWrong]
-
 
 def runTests(activationsPath, indexLabelMappingPath, sourcePath, sourcePrefix):
 
@@ -134,10 +118,10 @@ def runTests(activationsPath, indexLabelMappingPath, sourcePath, sourcePrefix):
    clusterSets = []
    for rootPath, subdirs, files in os.walk(sourcePath):
       if rootPath.split('/')[len(rootPath.split('/'))-1].startswith(sourcePrefix):
-         logger.debug('Correct root: ' + rootPath)
+         # logger.debug('Correct root: ' + rootPath)
          for f in files:
             if f.endswith('clusters.npy'):
-               logger.debug('Found clusters file: ' + f)
+               # logger.debug('Found clusters file: ' + f)
 
                # Type and k are parsed from root folder ending.
                split = rootPath.split('/')[::-1][0].split('_')
@@ -155,29 +139,38 @@ def runTests(activationsPath, indexLabelMappingPath, sourcePath, sourcePrefix):
    mixedClusterResultsSimpleNormalized = []
    perLabelClusterResultsSimple = []
 
-
    for clusters in clusterSets:
-      factorPerLabel = calculateFactorPerLabel(clusters['data'], activations.shape[1] - len(labels))
+      [sumPerLabel, factorPerLabel] = getSumAndFactorPerLabel(clusters['data'], activations.shape[1] - len(labels))
 
       logger.info("Evaluating clusters at " + clusters['path'])
 
       if(clusters['type'] == 'perLabel'):
-         [confusionMatrix, meanAveragePrecision, overallCorrect, overallWrong] = testSimple(clusters['data'], activations, labels, None) # (clusters, activations, labels)
+         [confusionMatrix, meanAveragePrecision, overallCorrect, overallWrong] = runTest(clusters['data'], activations, labels, None) # (clusters, activations, labels)
          perLabelClusterResultsSimple.append([clusters['k'], meanAveragePrecision, overallCorrect, overallWrong])
-
+         saveConfusionMatrix(confusionMatrix, clusters['path'] + "confusion_test.npy")
+         utility.plotConfusionMatrix(confusionMatrix, labels, clusters['path'] + "confusion_test.pdf")
       else:
-         [confusionMatrix, meanAveragePrecision, overallCorrect, overallWrong] = testSimple(clusters['data'], activations, labels, None) # (clusters, activations, labels)
+         [confusionMatrix, meanAveragePrecision, overallCorrect, overallWrong] = runTest(clusters['data'], activations, labels, None) # (clusters, activations, labels)
          mixedClusterResultsSimple.append([clusters['k'], meanAveragePrecision, overallCorrect, overallWrong])
-         [confusionMatrix, meanAveragePrecision, overallCorrect, overallWrong] = testSimple(clusters['data'], activations, labels, factorPerLabel) # (clusters, activations, labels)
+         saveConfusionMatrix(confusionMatrix, clusters['path'] + "confusion_test.npy")
+         utility.plotConfusionMatrix(confusionMatrix, labels, clusters['path'] + "confusion_test.pdf")
+
+         [confusionMatrix, meanAveragePrecision, overallCorrect, overallWrong] = runTest(clusters['data'], activations, labels, factorPerLabel) # (clusters, activations, labels)
          mixedClusterResultsSimpleNormalized.append([clusters['k'], meanAveragePrecision, overallCorrect, overallWrong])
+         saveConfusionMatrix(confusionMatrix, clusters['path'] + "confusion_test_normalized.npy")
+         utility.plotConfusionMatrix(confusionMatrix, labels, clusters['path'] + "confusion_test_normalized.pdf")
 
-      utility.plotConfusionMatrix(confusionMatrix, labels, clusters['path'] + "confusion_test.pdf")
+   overviewPerLabel = np.array(perLabelClusterResultsSimple)
+   overviewMixed = np.array(mixedClusterResultsSimple)
+   overviewMixedNormalized = np.array(mixedClusterResultsSimpleNormalized)
 
+   saveOverview(overviewPerLabel, sourcePath + 'perLabel/')
+   saveOverview(overviewMixed, sourcePath + 'result_mixed/')
+   saveOverview(overviewMixedNormalized, sourcePath + 'result_mixed_normalized/')
 
-   plotOverview(np.array(perLabelClusterResultsSimple), sourcePath + 'perLabel/')
-   plotOverview(np.array(mixedClusterResultsSimple), sourcePath + 'result_mixed/')
-   plotOverview(np.array(mixedClusterResultsSimpleNormalized), sourcePath + 'result_mixed_normalized/')
-   # plot overview results
+   utility.plotKMeansOverview(overviewPerLabel, sourcePath + 'perLabel_result.pdf')
+   utility.plotKMeansOverview(overviewMixed, sourcePath + 'result_mixed_result.pdf')
+   utility.plotKMeansOverview(overviewMixedNormalized, sourcePath + 'result_mixed_normalized_result.pdf')
 
 if __name__ == '__main__':
    if len(sys.argv) != 5:
