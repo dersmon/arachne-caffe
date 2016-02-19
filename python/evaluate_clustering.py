@@ -115,23 +115,24 @@ def runTests(activationsPath, indexLabelMappingPath, sourcePath, sourcePrefix):
 
    clusterSets = []
    for rootPath, subdirs, files in os.walk(sourcePath):
-      if rootPath.split('/')[len(rootPath.split('/'))-1].startswith(sourcePrefix):
-         # logger.debug('Correct root: ' + rootPath)
-         for f in files:
-            if f.endswith('clusters.npy'):
-               # logger.debug('Found clusters file: ' + f)
+      # logger.debug(rootPath)
 
-               # Type and k are parsed from root folder ending.
-               split = rootPath.split('/')[::-1][0].split('_')
-               splitLength = len(split)
-               # logger.debug(split)
-               k = split[splitLength - 1]
-               clusteringType = split[splitLength - 2]
+      # logger.debug('Correct root: ' + rootPath)
+      for f in files:
+         if f.endswith('clusters.npy'):
+            # logger.debug('Found clusters file: ' + f)
 
-               # logger.debug(k)
-               # logger.debug(clusteringType)
+            # Type and k are parsed from root folder ending.
+            split = rootPath.split('/')[::-1][1].split('_')
+            splitLength = len(split)
+            logger.debug(split)
+            k = split[splitLength - 1]
+            clusteringType = split[splitLength - 2]
 
-               clusterSets.append({'file': f,'path':rootPath + '/', 'data':utility.arrayFromFile(rootPath + '/' +  f), 'k':int(k), 'type':clusteringType})
+            logger.debug(k)
+            logger.debug(clusteringType)
+
+            clusterSets.append({'file': f,'path':rootPath + '/', 'data':utility.arrayFromFile(rootPath + '/' +  f), 'k':int(k), 'type':clusteringType})
 
    mixedClusterResultsSimple = []
    mixedClusterResultsSimpleNormalized = []
@@ -166,9 +167,9 @@ def runTests(activationsPath, indexLabelMappingPath, sourcePath, sourcePrefix):
    saveOverview(overviewMixed, sourcePath + 'result_mixed/')
    saveOverview(overviewMixedNormalized, sourcePath + 'result_mixed_normalized/')
 
-   utility.plotKMeansOverview(overviewPerLabel, sourcePath + 'perLabel_result.pdf')
-   utility.plotKMeansOverview(overviewMixed, sourcePath + 'result_mixed_result.pdf')
-   utility.plotKMeansOverview(overviewMixedNormalized, sourcePath + 'result_mixed_normalized_result.pdf')
+   utility.plotKMeansOverview(overviewPerLabel, sourcePath + 'perLabel_result.pdf', True)
+   utility.plotKMeansOverview(overviewMixed, sourcePath + 'result_mixed_result.pdf', True)
+   utility.plotKMeansOverview(overviewMixedNormalized, sourcePath + 'result_mixed_normalized_result.pdf', True)
 
 if __name__ == '__main__':
    if len(sys.argv) != 5:
