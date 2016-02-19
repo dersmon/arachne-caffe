@@ -21,15 +21,15 @@ MAX_ITERATIONS_PER_LABEL = 150
 MAX_ITERATIONS_MIXED = 150
 
 PER_LABEL_START = 1
-PER_LABEL_END = 6
+PER_LABEL_END = 8
 
-MIXED_START = 50
-MIXED_STEP = 5
-MIXED_END = 0
+MIXED_START = 32
+MIXED_STEP = 8
+MIXED_END = 128
 
-RUNS_PER_TYPE = 4
+RUNS_PER_TYPE = 3
 
-def generateKMeansSeries(activationsPath, labelIndexMappingPath, targetFolder, subfolderPrefix):
+def generateKMeansSeries(activationsPath, labelIndexMappingPath, targetFolder):
    if targetFolder.endswith('/') == False:
       targetFolder += '/'
 
@@ -44,7 +44,7 @@ def generateKMeansSeries(activationsPath, labelIndexMappingPath, targetFolder, s
       while runCounter < RUNS_PER_TYPE:
 
          logger.info("Calculating per label KMeans with k = " + str(k) + ".")
-         currentTarget = targetFolder + subfolderPrefix + "_perLabel_" + str(k) + "/run_" + str(runCounter) + "_"
+         currentTarget = targetFolder + "perLabel_" + str(k) + "/run_" + str(runCounter) + "/"
          if not os.path.exists(os.path.dirname(currentTarget)):
             os.makedirs(os.path.dirname(currentTarget))
 
@@ -61,7 +61,7 @@ def generateKMeansSeries(activationsPath, labelIndexMappingPath, targetFolder, s
       while runCounter < RUNS_PER_TYPE:
 
          logger.info("Calculating mixed KMeans with k = " + str(k) + ".")
-         currentTarget = targetFolder + subfolderPrefix + "_mixed_" + str(k) + "/run_" + str(runCounter) + "_"
+         currentTarget = targetFolder + "mixed_" + str(k) + "/run_" + str(runCounter) + "/"
          if not os.path.exists(os.path.dirname(currentTarget)):
             os.makedirs(os.path.dirname(currentTarget))
 
@@ -71,13 +71,13 @@ def generateKMeansSeries(activationsPath, labelIndexMappingPath, targetFolder, s
       k += MIXED_STEP
 
 if __name__ == '__main__':
-   if len(sys.argv) != 5:
+   if len(sys.argv) != 4:
 
       logger.info("Please provide as argument:")
       logger.info("1) Path to training activations (*.npy).")
       logger.info("2) Path to label_index_mapping (*.txt).")
       logger.info("3) Target path for evaluation results.")
-      logger.info("4) Prefix for result folders.")
+
       sys.exit();
 
-   generateKMeansSeries(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
+   generateKMeansSeries(sys.argv[1], sys.argv[2], sys.argv[3])
