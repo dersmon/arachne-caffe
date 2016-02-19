@@ -1,6 +1,7 @@
 import numpy as np
 import random
 import logging
+import pickle
 
 logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -100,12 +101,14 @@ def cleanUp(clusters):
    logger.debug("Cluster count: " + str(len(clusters)))
    data = []
    for cluster in clusters:
-      logger.debug("Position: " + str(cluster['position'].shape))
-      logger.debug("Histogram: " + str(cluster['memberLabelHistogram'].shape))
+      # logger.debug("Position: " + str(cluster['position'].shape))
+      # logger.debug("Histogram: " + str(cluster['memberLabelHistogram'].shape))
       data.append(np.hstack((cluster['position'], cluster['memberLabelHistogram'])))
    return np.array(data)
 
 def saveResults(clusters, iterations, targetPath):
+   with open(targetPath + 'clusters_with_members.pickle', "w") as outputFile:
+      pickle.dump(clusters, outputFile)
    data = cleanUp(clusters)
    with open(targetPath + 'clusters.npy', "w") as outputFile:
       np.save(outputFile, data)
