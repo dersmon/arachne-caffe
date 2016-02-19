@@ -59,8 +59,9 @@ def plotConfusionMatrix(confusionMatrix, labels, targetPath):
 
    plt.close()
 
-def plotKMeansOverview(data, targetPath):
-
+def plotKMeansOverview(data, targetPath, plotDots):
+   # logger.debug(data.shape)
+   # logger.debug(data)
    data = data[data[:,0].argsort()]
 
    k = data[:,0]
@@ -72,9 +73,9 @@ def plotKMeansOverview(data, targetPath):
    summed = []
    while counter < uniqueK.shape[0]:
       currentK = uniqueK[counter]
-      logger.debug("Original shape: " + str(data[data[:,0] == currentK].shape))
+      # logger.debug("Original shape: " + str(data[data[:,0] == currentK].shape))
       currentSum = np.sum(data[data[:,0] == currentK], axis=0)
-      logger.debug("Summed shape: " + str(currentSum.shape))
+      # logger.debug("Summed shape: " + str(currentSum.shape))
       currentSum = currentSum / data[data[:,0] == currentK].shape[0]
 
       summed.append(currentSum)
@@ -90,16 +91,18 @@ def plotKMeansOverview(data, targetPath):
    maximumPrecision = np.argmax(meanAveragePrecision)
    maximumAccuracy = np.argmax(correct)
 
-   ax.plot(k, correct, 'go', k, meanAveragePrecision, 'bo')
-   ax.plot(summed[:,0], summed[:,2] / (summed[:,2] + summed[:,3]), 'g', summed[:,0], summed[:,1], 'b')
+   if plotDots:
+      ax.plot(k, correct, 'go', k, meanAveragePrecision, 'bo')
+   ax.plot(summed[:,0], summed[:,2] / (summed[:,2] + summed[:,3]), 'g', label="Accuracy")
+   ax.plot(summed[:,0], summed[:,1], 'b', label="Mean average precision")
    ax.plot((k[0], k[::-1][0]),(correct[maximumAccuracy],correct[maximumAccuracy]), 'g--', (k[0], k[::-1][0]),(meanAveragePrecision[maximumPrecision],meanAveragePrecision[maximumPrecision]), 'b--')
    ax.set_xlabel('K')
    ax.axis([k[0], k[::-1][0], 0, 1])
    ax.grid(True)
 
-   labelTrainingLoss = mpatches.Patch(color='g', label='Accuracy')
-   labelTestLoss = mpatches.Patch(color='b', label='Mean average precision')
+   # labelAccuracy = mpatches.Patch(color='g', label='Accuracy')
+   # labelMeanAveragePrecision = mpatches.Patch(color='b', label='Mean average precision')
 
-   plt.legend(handles=[labelTrainingLoss, labelTestLoss])
+   plt.legend()
    plt.savefig(targetPath, bbox_inches='tight')
    plt.close()
