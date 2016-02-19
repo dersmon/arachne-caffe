@@ -134,7 +134,7 @@ def runTests(training, test, labels, targetPath, nn):
    logger.info('Writing file ' + targetPath + "overview.csv")
    np.savetxt( targetPath + "overview.csv", results, delimiter=',')
 
-   utility.plotKMeansOverview(results, targetPath + "overview.pdf")
+   utility.plotKMeansOverview(results, targetPath + "overview.pdf", False)
 
 
 if __name__ == '__main__':
