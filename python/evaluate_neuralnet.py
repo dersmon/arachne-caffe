@@ -13,13 +13,17 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 root = './'
+caffe_root = '/home/simon/Workspaces/caffe'
+
+sys.path.append(caffe_root + '/tools/extra/')
+import parse_log as pl
+
 
 BATCH_SIZE = 100
 MODEL_FILE = root + 'caffe_models/hybrid_cnn_handsorted/deploy.prototxt'
 # PRETRAINED_FILE = root + 'caffe_models/hybrid_cnn_handsorted/handsorted_iter_18000.caffemodel'
-PRETRAINED_FILE = root + 'caffe_models/evaluation/untrained_01_4000_iter_20000.caffemodel'
-MEAN_FILE = root + 'image_imports/handsorted_lmdb/train_mean.binaryproto'
-LAST_LAYER_NAME = 'fc8'
+PRETRAINED_FILE = root + 'caffe_models/evaluation/standard/untrained_01_4000_iter_10000.caffemodel'
+MEAN_FILE = root + 'image_imports/handsorted_lmdb/mean_test.binaryproto'
 USE_GPU = False
 
 LOSS_MAXIMUM = 5
@@ -111,77 +115,84 @@ def createConfusionMatrix(labels, labelIndexInfoPath):
 
    return confusionMatrix
 
-def plotTrainingLossAndAccuracy(trainingLogCSVPath, testLogCSVPath, evaluationTargetPath):
-   trainingLog = []
-   with open(trainingLogCSVPath, 'r') as csvFile:
-      reader = csv.reader(csvFile, delimiter=',')
-      for row in reader:
-         trainingLog.append(row)
+def plotTrainingLossAndAccuracy(trainingLogPath, evaluationTargetPath):
+
+   trainingLog, testLog = pl.parse_log(trainingLogPath)
+   # logger.debug(testLog[1])
+
+   trainingData = []
+   for item in trainingLog:
+      trainingData.append([item['NumIters'], item['loss']])
+   testData = []
+   for item in testLog:
+      testData.append([item['NumIters'], item['loss'], item['accuracy']])
+
+   trainingData = np.array(trainingData)
+   testData = np.array(testData)
+
 
    trainingLog = np.array(trainingLog)
-
-   testLog = []
-   with open(testLogCSVPath, 'r') as csvFile:
-      reader = csv.reader(csvFile, delimiter=',')
-      for row in reader:
-         testLog.append(row)
-
    testLog = np.array(testLog)
+
+   # logger.debug(trainingLog.shape)
+   # logger.debug(testLog.shape)
+
+
    iterationMaximum = ITERATION_MAXIMUM
    counter = 0
    while counter < ITERATION_VARIATIONS:
 
       fig, ax1 = plt.subplots()
-      ax1.plot(trainingLog[1:,0], trainingLog[1:,3], 'r', testLog[1:,0], testLog[1:,4], 'b')
+      ax1.plot(trainingData[:,0], trainingData[:,1], 'r', testData[:,0], testData[:,1], 'b')
 
       ax1.set_xlabel('Iterations')
       ax1.set_ylabel('Loss')
 
       ax2 = ax1.twinx()
-      ax2.plot(testLog[1:,0], testLog[1:,3], 'g')
+      ax2.plot(testData[:,0], testData[:,2], 'g')
       ax2.set_ylabel('Accuracy')
 
       ax1.axis([0, iterationMaximum, 0, LOSS_MAXIMUM])
       ax2.axis([0, iterationMaximum, 0, 1])
-      ax1.set_xticks(np.arange(0,iterationMaximum + 1,iterationMaximum / 10))
-      ax1.set_xticklabels(np.arange(0,iterationMaximum + 1, iterationMaximum / 10), rotation=45)
+      ax1.set_xticks(np.arange(0,iterationMaximum + 1, iterationMaximum * 0.1))
+      ax1.set_xticklabels(np.arange(0,iterationMaximum + 1, iterationMaximum  * 0.1), rotation=45)
       ax1.set_yticks(np.arange(0, LOSS_MAXIMUM, float(LOSS_MAXIMUM) / 10))
       ax2.set_yticks(np.arange(0, 1, float(1) / 10))
 
       ax1.grid(True)
       ax2.grid(True)
 
-      plt.title(evaluationTargetPath)
+      # plt.title(evaluationTargetPath)
 
       labelTrainingLoss = mpatches.Patch(color='r', label='Training set loss')
       labelTestLoss = mpatches.Patch(color='b', label='Test set loss')
       labelTestAccuracy = mpatches.Patch(color='g', label='Test set accuracy')
 
-      plt.legend(handles=[labelTrainingLoss, labelTestLoss, labelTestAccuracy])
+      plt.legend(handles=[labelTrainingLoss, labelTestLoss, labelTestAccuracy], bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
 
-      plt.savefig(evaluationTargetPath +'lossAndAccuracy_' + str(ITERATION_MAXIMUM) '.pdf', bbox_inches='tight')
+      plt.savefig(evaluationTargetPath +'lossAndAccuracy_' + str(iterationMaximum) + '.pdf', bbox_inches='tight')
 
       plt.close()
 
       iterationMaximum = int(iterationMaximum * 0.5)
 
+      counter += 1
+
 if __name__ == '__main__':
 
-   if len(sys.argv) != 6:
+   if len(sys.argv) != 5:
 
       logger.info("Please provide as argument:")
       logger.info("1) Path to label_index_info_test.")
       logger.info("2) Path to label_index_mapping.")
-      logger.info("3) Path to training log (*.csv).")
-      logger.info("4) Path to test log (*.csv).")
-      logger.info("5) Target path for evaluation results.")
+      logger.info("3) Path to training log file.")
+      logger.info("4) Target path for evaluation results.")
       sys.exit();
 
    labelIndexInfoPath = sys.argv[1]
    labelIndexMappingPath = sys.argv[2]
-   trainingLogCSVPath = sys.argv[3]
-   testLogCSVPath = sys.argv[4]
-   evaluationTargetPath = sys.argv[5]
+   logFilePath = sys.argv[3]
+   evaluationTargetPath = sys.argv[4]
    if evaluationTargetPath.endswith('/') == False:
       evaluationTargetPath += '/'
 
@@ -189,18 +200,10 @@ if __name__ == '__main__':
       os.makedirs(os.path.dirname(evaluationTargetPath))
 
 
-   plotTrainingLossAndAccuracy(trainingLogCSVPath, testLogCSVPath, evaluationTargetPath)
-   confusionMatrixPath = None
+   plotTrainingLossAndAccuracy(logFilePath, evaluationTargetPath)
 
-   if len(sys.argv) == 5:
-      confusionMatrixPath = sys.argv[4]
-
-   labels = []
-
-   with open(labelIndexMappingPath, "r") as inputFile:
-      for line in inputFile.readlines():
-         labels.append(line.split(' ')[0])
-
+   sys.exit()
+   labels = utility.getLabelStrings(labelIndexMappingPath)
    confusionMatrix = createConfusionMatrix(labels, labelIndexInfoPath)
 
    confusionMatrixPath = evaluationTargetPath + 'confusionMatrix.npy'
