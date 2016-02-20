@@ -97,7 +97,7 @@ def testBayes(training, test, labels, targetPath):
 
    utility.plotConfusionMatrix(confusionMatrix, labels, targetPath + "confusion.pdf")
 
-   results = [[meanAveragePrecision, overallCorrect, overallWrong]]
+   results = [0, meanAveragePrecision, overallCorrect, overallWrong]
    logger.info('Writing file ' + targetPath + "overview.csv")
    np.savetxt( targetPath + "overview.csv", results, delimiter=',')
 
