@@ -1,6 +1,7 @@
 *.binaryproto
 *.caffemodel
 *.pyc
+*.solverstate
 
 legacy/
 webdemo/bootstrap/
