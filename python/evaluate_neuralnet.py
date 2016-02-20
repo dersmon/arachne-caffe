@@ -20,9 +20,9 @@ import parse_log as pl
 
 
 BATCH_SIZE = 100
-MODEL_FILE = root + 'caffe_models/hybrid_cnn_handsorted/deploy.prototxt'
+MODEL_FILE = root + 'caffe_models/hybrid_cnn_handsorted_lmdb/deploy.prototxt'
 # PRETRAINED_FILE = root + 'caffe_models/hybrid_cnn_handsorted/handsorted_iter_18000.caffemodel'
-PRETRAINED_FILE = root + 'caffe_models/evaluation/standard/untrained_01_4000_iter_10000.caffemodel'
+PRETRAINED_FILE = root + 'caffe_models/hybrid_cnn_handsorted_lmdb/snapshots/finetuned_complete_0001_4000_iter_10000.caffemodel'
 MEAN_FILE = root + 'image_imports/handsorted_lmdb/mean_test.binaryproto'
 USE_GPU = False
 
@@ -69,19 +69,14 @@ def evaluateImageBatch(imagePaths):
    net.blobs['data'].data[...] = imageData
 
    out = net.forward()
-   result = np.zeros((1, out['prob'][0].shape[0]))
+   return out['prob']
 
-   counter = 0
-   while counter < len(imagePaths):
-      result[0,out['prob'][counter].argmax()] += 1
-      counter +=1
-
-   return result
-
-def createConfusionMatrix(labels, labelIndexInfoPath):
+def testNeuralNet(labels, labelIndexInfoPath):
    imagesByLabel = [[] for i in range(len(labels))]
    confusionMatrix = np.zeros((len(labels),len(labels)))
    # split info by label
+
+
    with open(labelIndexInfoPath, "r") as inputFile:
       for line in inputFile.readlines():
          split = line.split(' ')
@@ -89,6 +84,10 @@ def createConfusionMatrix(labels, labelIndexInfoPath):
          labelIndex = int(split[1])
 
          imagesByLabel[labelIndex].append(imagePath)
+
+   overallCorrect = 0
+   overallWrong = 0
+   meanAveragePrecision = 0
 
    # create batches per split if nessecary
    for labelIndex, imagePaths in enumerate(imagesByLabel):
@@ -107,13 +106,58 @@ def createConfusionMatrix(labels, labelIndexInfoPath):
       batchResults = np.empty((len(batches), len(labels)))
       # run net and collect predictions
       for batchIndex, batch in enumerate(batches):
-         batchResults[batchIndex,:] = evaluateImageBatch(batch)
-      # sum up predictions per label type
-      confusion = np.sum(batchResults, axis=0)
-      # append sums to matrix
+         batchResult = evaluateImageBatch(batch)
+         # logger.debug(batchResult)
+         # logger.debug(batchResult.shape)
+
+         predictions = np.argmax(batchResult, axis=1)
+         # logger.debug(predictions.shape)
+         # logger.debug(predictions)
+
+         predictionCounter = 0
+         while predictionCounter < predictions.shape[0]:
+            confusion[0,predictions[predictionCounter]] += 1
+
+            if predictions[predictionCounter] == labelIndex:
+               overallCorrect += 1
+            else:
+               overallWrong += 1
+
+            # logger.debug(confusion)
+            # logger.debug(overallCorrect)
+            # logger.debug(overallWrong)
+
+            predictionCounter += 1
+
+         resultCounter = 0
+         while resultCounter < batchResult.shape[0]:
+            sortedPredictedLabel = np.argsort(batchResult[resultCounter])[::-1].tolist()
+
+            averagePrecision = 0
+            relevant = 0
+
+            for idx, value in enumerate(sortedPredictedLabel):
+               indicator = 0
+               if(value == labelIndex):
+                  indicator = 1
+                  relevant += 1
+
+               precision = float(relevant) / (idx + 1)
+               averagePrecision += (precision * indicator)
+
+            if relevant != 0:
+               averagePrecision = float(averagePrecision) / relevant
+            meanAveragePrecision += averagePrecision
+
+            resultCounter += 1
+
       confusionMatrix[labelIndex,:] = confusion
 
-   return confusionMatrix
+   logger.info(' Accuracy: ' + str(float(overallCorrect)/(overallWrong + overallCorrect)))
+   meanAveragePrecision = float(meanAveragePrecision) / (overallWrong + overallCorrect)
+   logger.info(' Mean average precision: '+str(meanAveragePrecision))
+
+   return [confusionMatrix, meanAveragePrecision, overallCorrect, overallWrong]
 
 def plotTrainingLossAndAccuracy(trainingLogPath, evaluationTargetPath):
 
@@ -202,9 +246,13 @@ if __name__ == '__main__':
 
    plotTrainingLossAndAccuracy(logFilePath, evaluationTargetPath)
 
-   sys.exit()
+   # sys.exit()
    labels = utility.getLabelStrings(labelIndexMappingPath)
-   confusionMatrix = createConfusionMatrix(labels, labelIndexInfoPath)
+   [confusionMatrix, meanAveragePrecision, overallCorrect, overallWrong] = testNeuralNet(labels, labelIndexInfoPath)
+
+   overviewPath = evaluationTargetPath + "overview.csv"
+   logger.info('Writing file ' + overviewPath)
+   np.savetxt(overviewPath, np.array([0,meanAveragePrecision, overallCorrect, overallWrong]), delimiter=',')
 
    confusionMatrixPath = evaluationTargetPath + 'confusionMatrix.npy'
    logger.info('Writing file ' + confusionMatrixPath)
