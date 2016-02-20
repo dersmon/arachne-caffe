@@ -38,6 +38,7 @@ def plotConfusionMatrix(confusionMatrix, labels, targetPath):
    ax.set_xticks(ticks)
    ax.set_xticklabels(labels, fontsize=6, rotation=45, ha='right')
 
+   ax.tick_params(axis='both', which='major', bottom=False, top=False, left=False, right=False)
    # diagonal = np.diag(np.diag(scaled))
    # correct = np.ma.masked_array(scaled, mask=(diagonal==0))
    # false = np.ma.masked_array(scaled, mask=(diagonal!=0))
