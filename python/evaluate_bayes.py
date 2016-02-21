@@ -12,7 +12,6 @@ logger.setLevel(logging.DEBUG)
 def createClassifier(training, labelCount):
 
    neurons = training.shape[1] - labelCount
-
    activationsByLabel = []
    counter = 0
    while counter < labelCount:
@@ -23,10 +22,15 @@ def createClassifier(training, labelCount):
       counter += 1
 
    activationsByLabel = np.array(activationsByLabel)
+
    devisor = np.tile(np.sum(activationsByLabel, axis=1),(neurons, 1)).T
+
    P = (activationsByLabel + 1) / (devisor + neurons)
 
-   return P
+   PLog = np.log(P)
+
+   # logger.debug(PLog)
+   return PLog
 
 def testBayes(training, test, labels, targetPath):
 
@@ -36,9 +40,29 @@ def testBayes(training, test, labels, targetPath):
       os.makedirs(os.path.dirname(targetPath))
 
    labelCount = len(labels)
-
-   P = createClassifier(training, labelCount)
    neurons = training.shape[1] - labelCount
+
+   minTraining = np.min(training[:,0:neurons])
+   minTest = np.min(test[:,0:neurons])
+   absoluteMin = 0
+
+   if minTraining < minTest:
+      absoluteMin = minTraining
+   else:
+      absoluteMin = minTest
+
+   # logger.debug("Min value: " + str(absoluteMin))
+
+   training[:,0:neurons] = training[:,0:neurons] + np.abs(absoluteMin)
+   test[:,0:neurons] = test[:,0:neurons] + np.abs(absoluteMin)
+
+   # logger.debug(np.min(training))
+   # logger.debug(np.min(test))
+
+   PLog = createClassifier(training, labelCount)
+
+
+   logger.debug(neurons)
 
    overallCorrect = 0
    overallWrong = 0
@@ -52,17 +76,20 @@ def testBayes(training, test, labels, targetPath):
       activationsByLabel[counter] = currentSelection
       counter += 1
 
+   # logger.debug(activationsByLabel)
+
    confusionMatrix = np.zeros((labelCount,labelCount))
    for labelIndex, activations in enumerate(activationsByLabel):
+      # logger.debug(activations.shape)
       counter = 0
       while counter < activations.shape[0]:
          currentActivation = activations[counter,0:neurons]
          searchedLabel = np.argmax(activations[counter,neurons:])
-         PLog = np.log(P)
+
 
          predictions = currentActivation * PLog
          predictions = np.sum(predictions, axis=1)
-
+         # logger.debug(str(np.argmax(predictions)) + " " + str(searchedLabel))
          if np.argmax(predictions) == searchedLabel:
             overallCorrect += 1
          else:
