@@ -13,10 +13,6 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 def saveOverview(data, targetPath):
-   if targetPath.endswith('/') == False:
-      targetPath += '/'
-   if not os.path.exists(os.path.dirname(targetPath)):
-      os.makedirs(os.path.dirname(targetPath))
 
    data = data[data[:,0].argsort()]
 
@@ -163,9 +159,9 @@ def runTests(activationsPath, indexLabelMappingPath, sourcePath, sourcePrefix):
    overviewMixed = np.array(mixedClusterResultsSimple)
    overviewMixedNormalized = np.array(mixedClusterResultsSimpleNormalized)
 
-   saveOverview(overviewPerLabel, sourcePath + 'perLabel/')
-   saveOverview(overviewMixed, sourcePath + 'result_mixed/')
-   saveOverview(overviewMixedNormalized, sourcePath + 'result_mixed_normalized/')
+   saveOverview(overviewPerLabel, sourcePath + 'perLabel_')
+   saveOverview(overviewMixed, sourcePath + 'result_mixed_')
+   saveOverview(overviewMixedNormalized, sourcePath + 'result_mixed_normalized_')
 
    utility.plotKMeansOverview(overviewPerLabel, sourcePath + 'perLabel_result.pdf', True)
    utility.plotKMeansOverview(overviewMixed, sourcePath + 'result_mixed_result.pdf', True)
