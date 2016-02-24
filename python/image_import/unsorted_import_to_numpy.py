@@ -20,7 +20,7 @@ root = './'
 
 MODEL_FILE = root + 'caffe_models/hybrid_cnn_handsorted_lmdb/deploy_fc7.prototxt'
 PRETRAINED_FILE = root + 'caffe_models/hybridCNN_iter_700000.caffemodel'
-# MEAN_FILE = root + 'image_imports/handsorted_lmdb/mean_train.binaryproto'
+MEAN_FILE = root + 'image_imports/handsorted_lmdb/mean_train.binaryproto'
 LAST_LAYER_NAME = 'fc7'
 USE_GPU = False
 
@@ -57,6 +57,8 @@ def crunchDumpFiles(imagePaths):
    currentBatch = []
    currentBatchSize = 0
    batchCount = 0
+
+
 
    for path in imagePaths:
 
@@ -111,14 +113,21 @@ if __name__ == '__main__':
    imagePaths = []
    targetPath = sys.argv[2]
 
+   if not os.path.exists(os.path.dirname(targetPath)):
+      os.makedirs(os.path.dirname(targetPath))
+      
    for rootPath, subdirs, files in os.walk(sys.argv[1]):
       for f in files:
          if f.endswith('.jpg'):
             imagePaths.append(rootPath + f)
+   with open(targetPath + "info.txt", "a") as output:
+      for index, value in enumerate(imagePaths):
+         output.write(value + ' 0\n')
 
+   sys.exit()
    activations = crunchDumpFiles(imagePaths)
-   
-   if not os.path.exists(os.path.dirname(targetPath)):
-      os.makedirs(os.path.dirname(targetPath))
+
+
+
    with open(targetPath, "w") as output:
       np.save(output, activations)

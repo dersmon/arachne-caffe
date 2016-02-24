@@ -15,13 +15,13 @@ logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-K = 32
+K = 5
 
 if __name__ == '__main__':
    if(len(sys.argv) != 4 and len(sys.argv) != 5):
       logger.info("Please provide as arguments:")
       logger.info("1) activations (*.npy).")
-      logger.info("2) original image folder")
+      logger.info("2) info file (*.txt)")
       logger.info("3) target path for sorted images")
       logger.info("4) cluster pickle (optional)")
       sys.exit()
@@ -34,10 +34,16 @@ if __name__ == '__main__':
       os.makedirs(os.path.dirname(targetPath))
 
    imagePaths = []
-   for rootPath, subdirs, files in os.walk(sys.argv[2]):
-      for f in files:
-         if f.endswith('.jpg'):
-            imagePaths.append(rootPath + f)
+
+   with open(sys.argv[2], "r") as result:
+      for line in result.readlines():
+
+         split = line.strip().split(' ')
+         imagePaths.append(split[0])
+   # for rootPath, subdirs, files in os.walk(sys.argv[2]):
+   #    for f in files:
+   #       if f.endswith('.jpg'):
+   #          imagePaths.append(rootPath + f)
 
    clusters = None
    if len(sys.argv) == 5:
