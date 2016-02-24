@@ -56,12 +56,13 @@ def plotOverview(activations, labelCount, indexLabelMappingPath, plotFileName):
    plt.imshow(scaled, 'afmhot', interpolation='none')
 
    ax = plt.gca()
+   ax.tick_params(axis='both', which='major', bottom=False, top=False, left=False, right=False)
    ticks = np.arange(activationsPerLabel * 0.5,selection.shape[0],activationsPerLabel)
 
    ax.set_yticks(ticks)
    ax.set_yticklabels(tickLabels)
 
-   plt.savefig(plotFileName)
+   plt.savefig(plotFileName, bbox_inches='tight')
 
 def plotLabelSummaries():
    logger.info('Todo...')
