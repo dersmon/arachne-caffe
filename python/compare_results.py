@@ -20,7 +20,7 @@ def plotComparison(data, targetPath):
    for item in data:
       accuracyData.append(item['accuracy'])
       meanAveragePrecisionData.append(item['meanAveragePrecision'])
-      labels.append(item['label'])
+      labels.append(item['label'].split('_')[-1])
 
    logger.debug(accuracyData)
    logger.debug(meanAveragePrecisionData)
@@ -72,10 +72,14 @@ if __name__ == '__main__':
    for path in csvFiles:
       with open(path, "r") as inputFile:
          result = np.loadtxt(inputFile, delimiter=",")
+
          if len(result.shape) == 1:
             data.append({'label':os.path.basename(path).split('.')[0], 'meanAveragePrecision': np.max(result[1]), 'accuracy':np.max(result[2] / (result[2] + result[3]))})
          else:
             data.append({'label':os.path.basename(path).split('.')[0], 'meanAveragePrecision': np.max(result[:,1]), 'accuracy':np.max(result[:,2] / (result[:,2] + result[:,3]))})
 
    logger.debug(data)
-   plotComparison(data, sys.argv[1])
+
+   sortedData = sorted(data, key=lambda k: k['label'])[::-1]
+
+   plotComparison(sortedData, sys.argv[1])
