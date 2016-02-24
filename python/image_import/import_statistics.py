@@ -93,6 +93,8 @@ def evaluate(dumpRootPath, logPath, plotPath, showPlot):
    if showPlot:
       plt.show()
 
+   plt.close()
+
 def createLabelHistogram(imagesByLabel, labels, evaluationTargetPath):
 
    histogramLabel = np.array([0] * len(labels))
@@ -100,14 +102,22 @@ def createLabelHistogram(imagesByLabel, labels, evaluationTargetPath):
    for labelIndex, images in enumerate(imagesByLabel):
       histogramLabel[labelIndex] = len(images)
 
-   y_pos = np.arange(len(labels))
-   x_pos = np.arange(0, np.max(histogramLabel), 50)
+   fig, ax = plt.subplots()
 
-   plt.barh(y_pos, histogramLabel, height=0.8, left=None, hold=None, align='center')
-   plt.yticks(y_pos, labels)
-   plt.xticks(x_pos, x_pos)
-   plt.gca().xaxis.grid(True)
-   # plt.title('Label distribution:')
+   index = np.arange(len(histogramLabel))
+   logger.debug(index)
+   bar_width = 1
+   alpha  = 0.8
+
+   rects = plt.barh(index, histogramLabel, align='center', color='b', alpha=alpha)
+
+   ax.tick_params(axis='both', which='major', bottom=True, top=True, left=False, right=False)
+   plt.xlabel('Image count')
+   plt.yticks(index, labels, fontsize=6)
+   plt.xticks(np.arange(0, np.max(histogramLabel), 250))
+
+   ax.xaxis.grid(True)
+
    plt.savefig(evaluationTargetPath + "label_distribution.pdf", bbox_inches='tight')
    plt.close()
 
@@ -129,7 +139,7 @@ def createExampleGrids(imagesByLabel, labels, evaluationTargetPath):
          imageSub.axes.get_yaxis().set_visible(False)
          imageCount += 1
 
-      fig.suptitle(labels[labelIndex] + ': ' + str(len(images)))
+      # fig.suptitle(labels[labelIndex] + ': ' + str(len(images)))
 
       fig.savefig(evaluationTargetPath + "examples_" + labels[labelIndex] + ".pdf")
       plt.close()
