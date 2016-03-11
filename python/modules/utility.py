@@ -13,7 +13,10 @@ def getLabelStrings(filePath):
    with open(filePath, 'r') as inputFile:
       result = []
       for line in inputFile.readlines():
-        result.append(line.split(' ')[0])
+         if '\t' in line:
+            result.append(line.split('\t')[0])
+         else:
+            result.append(line.split(' ')[0])
 
    return result
 
