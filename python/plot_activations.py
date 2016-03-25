@@ -4,18 +4,13 @@ import sys
 import logging
 import matplotlib.pyplot as plt
 import modules.utility as utility
+import matplotlib.colors as colors
+
 
 logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-def getLabelStrings(filePath):
-   with open(filePath, 'r') as inputFile:
-      result = []
-      for line in inputFile.readlines():
-        result.append(line.split(' ')[0])
-
-   return result
 
 def plotOverview(activations, labelCount, indexLabelMappingPath, plotFileName):
    firstLabelIndex = activations.shape[1] - labelCount
@@ -48,14 +43,18 @@ def plotOverview(activations, labelCount, indexLabelMappingPath, plotFileName):
       labelCounter += 1
 
    if indexLabelMappingPath != None:
-       tickLabels = getLabelStrings(indexLabelMappingPath)
+       tickLabels = utility.getLabelStrings(indexLabelMappingPath)
+
+   cmap = plt.get_cmap('Greys_r')
+   cmap_adjusted = colors.LinearSegmentedColormap.from_list('trunc(' + cmap.name +', ' + str(0) + ',' + str(1) + ')', cmap(np.linspace(0,1,100)))
 
    scaled = np.reshape(selection[:,0:firstLabelIndex], (selection.shape[0], reduceActivationsBy, reduceActivationsTo))
    scaled = scaled.mean(axis=1)
 
-   plt.imshow(scaled, 'afmhot', interpolation='none')
+   plt.imshow(scaled, cmap=cmap_adjusted, interpolation='none')
 
    ax = plt.gca()
+   # ax.pcolormesh(scaled, cmap=plt.get_cmap('afmhot'))
    ax.tick_params(axis='both', which='major', bottom=False, top=False, left=False, right=False)
    ticks = np.arange(activationsPerLabel * 0.5,selection.shape[0],activationsPerLabel)
 
