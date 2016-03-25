@@ -42,20 +42,7 @@ def plotConfusionMatrix(confusionMatrix, labels, targetPath):
    ax.set_xticklabels(labels, fontsize=6, rotation=45, ha='right')
 
    ax.tick_params(axis='both', which='major', bottom=False, top=False, left=False, right=False)
-   # diagonal = np.diag(np.diag(scaled))
-   # correct = np.ma.masked_array(scaled, mask=(diagonal==0))
-   # false = np.ma.masked_array(scaled, mask=(diagonal!=0))
-   # logger.debug(scaled)
-   # logger.debug(diagonal)
-   # logger.debug(correct)
-   # logger.debug(correct)
-   # logger.debug(false)
-   #
-   # logger.debug(false.shape)
-   # logger.debug(scaled.shape)
-   # logger.debug((correct == 0).shape)
-   # pa = ax.imshow(correct, cmap='Greens', interpolation='none')
-   # pb = ax.imshow(false, cmap='Reds', interpolation='none')
+
    cmap = plt.get_cmap('Blues')
    cmap_adjusted = colors.LinearSegmentedColormap.from_list('trunc(' + cmap.name +', ' + str(0) + ',' + str(1) + ')', cmap(np.linspace(0,0.8,100)))
    plt.imshow(scaled, cmap=cmap_adjusted, interpolation='none')
@@ -64,8 +51,6 @@ def plotConfusionMatrix(confusionMatrix, labels, targetPath):
    plt.close()
 
 def plotKMeansOverview(data, targetPath, plotDots):
-   # logger.debug(data.shape)
-   # logger.debug(data)
    data = data[data[:,0].argsort()]
 
    k = data[:,0]
@@ -77,9 +62,7 @@ def plotKMeansOverview(data, targetPath, plotDots):
    summed = []
    while counter < uniqueK.shape[0]:
       currentK = uniqueK[counter]
-      # logger.debug("Original shape: " + str(data[data[:,0] == currentK].shape))
       currentSum = np.sum(data[data[:,0] == currentK], axis=0)
-      # logger.debug("Summed shape: " + str(currentSum.shape))
       currentSum = currentSum / data[data[:,0] == currentK].shape[0]
 
       summed.append(currentSum)
@@ -104,9 +87,18 @@ def plotKMeansOverview(data, targetPath, plotDots):
    ax.axis([k[0], k[::-1][0], 0, 1])
    ax.grid(True)
 
-   # labelAccuracy = mpatches.Patch(color='g', label='Accuracy')
-   # labelMeanAveragePrecision = mpatches.Patch(color='b', label='Mean average precision')
-
    plt.legend()
    plt.savefig(targetPath, bbox_inches='tight')
    plt.close()
+
+def splitTestFeaturesByLabel(STest, labelCount):
+
+   activationsByLabel = [[] for i in range(labelCount)]
+   counter = 0
+   while counter < labelCount:
+      currentLabelIndex = STest.shape[1] - labelCount + counter
+      currentSelection = STest[test[:, currentLabelIndex] == 1]
+      activationsByLabel[counter] = currentSelection
+      counter += 1
+
+   return activationsByLabel
