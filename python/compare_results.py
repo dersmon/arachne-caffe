@@ -33,22 +33,18 @@ def plotComparison(data, targetPath):
    opacity = 0.4
 
 
-   rects1 = plt.barh(index + (2 * bar_width), accuracyData, bar_width,
-                 color='g')
+   rects1 = plt.barh(index + (2 * bar_width), accuracyData, bar_width, color='g', alpha=0.8, label='Accuracy')
 
-   rects2 = plt.barh(index + bar_width, meanAveragePrecisionData, bar_width,
-                 color='b')
+   rects2 = plt.barh(index + bar_width, meanAveragePrecisionData, bar_width, color='b', alpha=0.8, label='Mean average precision')
 
-   labelAccuracy = mpatches.Patch(color='g', label='Accuracy')
-   labelMeanAveragePrecision = mpatches.Patch(color='b', label='Mean average precision')
+   plt.legend([rects1, rects2], [rects1.get_label(), rects2.get_label()], bbox_to_anchor=(0., 1.02, 1., .102), loc=3, mode="expand", borderaxespad=0.)
 
-   plt.legend(handles=[labelAccuracy, labelMeanAveragePrecision], bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
    ax.tick_params(axis='both', which='major', bottom=True, top=True, left=False, right=False)
    ax.tick_params(axis='both', which='major', bottom=True, top=True, left=False, right=False)
+
    plt.xlabel('Scores')
    plt.yticks(index + (2 * bar_width), labels)
    plt.xticks(np.arange(0,1.1, 0.1))
-   plt.legend()
 
    ax.xaxis.grid(True)
 
