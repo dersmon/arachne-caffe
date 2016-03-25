@@ -198,12 +198,12 @@ layer {
   }
 }
 layer {
-  name: "fc8"
+  name: "fc8_arachne"
   type: "InnerProduct"
   bottom: "fc7"
   top: "fc8"
   inner_product_param {
-    num_output: 1000
+    num_output: 32
   }
 }
 layer {
