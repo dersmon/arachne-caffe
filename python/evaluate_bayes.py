@@ -5,32 +5,11 @@ import numpy as np
 import modules.utility as utility
 import logging
 
+import train_bayes as tb
+
 logging.basicConfig(format='%(asctime)s-%(levelname)s-%(name)s - %(message)s')
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
-def createClassifier(training, labelCount):
-
-   neurons = training.shape[1] - labelCount
-   activationsByLabel = []
-   counter = 0
-   while counter < labelCount:
-      currentLabelIndex = training.shape[1] - labelCount + counter
-      currentSelection = training[training[:, currentLabelIndex] == 1][:,0:neurons]
-      currentSelection = np.sum(currentSelection, axis=0)
-      activationsByLabel.append(currentSelection)
-      counter += 1
-
-   activationsByLabel = np.array(activationsByLabel)
-
-   devisor = np.tile(np.sum(activationsByLabel, axis=1),(neurons, 1)).T
-
-   P = (activationsByLabel + 1) / (devisor + neurons)
-
-   PLog = np.log(P)
-
-   # logger.debug(PLog)
-   return PLog
+logger.setLevel(logging.INFO)
 
 def testBayes(training, test, labels, targetPath):
 
@@ -51,52 +30,34 @@ def testBayes(training, test, labels, targetPath):
    else:
       absoluteMin = minTest
 
-   # logger.debug("Min value: " + str(absoluteMin))
-
    training[:,0:neurons] = training[:,0:neurons] + np.abs(absoluteMin)
    test[:,0:neurons] = test[:,0:neurons] + np.abs(absoluteMin)
 
-   # logger.debug(np.min(training))
-   # logger.debug(np.min(test))
-
-   PLog = createClassifier(training, labelCount)
-
-
-   logger.debug(neurons)
+   PLog = tb.trainBayes(training, labelCount)
 
    overallCorrect = 0
    overallWrong = 0
    meanAveragePrecision = 0
 
-   activationsByLabel = [[] for i in range(labelCount)]
-   counter = 0
-   while counter < labelCount:
-      currentLabelIndex = test.shape[1] - labelCount + counter
-      currentSelection = test[test[:, currentLabelIndex] == 1]
-      activationsByLabel[counter] = currentSelection
-      counter += 1
-
-   # logger.debug(activationsByLabel)
+   featuresByLabel = utility.splitTestFeaturesByLabel(test, len(labels))
 
    confusionMatrix = np.zeros((labelCount,labelCount))
-   for labelIndex, activations in enumerate(activationsByLabel):
-      # logger.debug(activations.shape)
+
+   for labelIndex, activations in enumerate(featuresByLabel):
       counter = 0
       while counter < activations.shape[0]:
          currentActivation = activations[counter,0:neurons]
          searchedLabel = np.argmax(activations[counter,neurons:])
 
-
          predictions = currentActivation * PLog
          predictions = np.sum(predictions, axis=1)
-         # logger.debug(str(np.argmax(predictions)) + " " + str(searchedLabel))
+
          if np.argmax(predictions) == searchedLabel:
             overallCorrect += 1
          else:
             overallWrong += 1
 
          confusionMatrix[labelIndex,np.argmax(predictions)] += 1
-
          averagePrecision = 0
          relevant = 0
 
@@ -117,9 +78,9 @@ def testBayes(training, test, labels, targetPath):
 
          counter += 1
 
-   logger.info('Accuracy Bayes:')
-   logger.info('correct: ' + str(overallCorrect) + ', wrong: ' + str(overallWrong) + ', ratio: ' + str(float(overallCorrect)/(overallWrong + overallCorrect)))
    meanAveragePrecision = float(meanAveragePrecision) / test.shape[0]
+
+   logger.info(' Accuracy: ' + str(float(overallCorrect)/(overallWrong + overallCorrect)))
    logger.info(' Mean average precision: '+str(meanAveragePrecision))
 
    utility.plotConfusionMatrix(confusionMatrix, labels, targetPath + "confusion.pdf")
