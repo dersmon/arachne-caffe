@@ -247,7 +247,7 @@ if __name__ == '__main__':
 
    plotTrainingLossAndAccuracy(logFilePath, evaluationTargetPath)
 
-   sys.exit()
+   # sys.exit()
    labels = utility.getLabelStrings(labelIndexMappingPath)
    [confusionMatrix, meanAveragePrecision, overallCorrect, overallWrong] = testNeuralNet(labels, labelIndexInfoPath, evaluationTargetPath)
 
