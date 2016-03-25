@@ -28,9 +28,6 @@ def runTests(training, test, labels, targetPath, nn):
       with open(targetPath + "nn.npy", "w") as outputFile:
          np.save(outputFile, nn)
 
-   # logger.debug("nn shape: " + str(nn.shape))
-   # logger.debug(nn)
-   # split neighbours by label
    nnByLabel = [[] for i in range(labelCount)]
    currentLabelIndex = 0
    while currentLabelIndex < labelCount:
@@ -41,11 +38,8 @@ def runTests(training, test, labels, targetPath, nn):
    allLabels = training[:,neurons:]
 
    sumPerLabel = np.sum(allLabels, axis=0)
-   # logger.debug(np.max(sumPerLabel))
    factorPerLabel = np.max(sumPerLabel) / sumPerLabel
 
-   # logger.debug("factorPerLabel shape: " + str(factorPerLabel.shape))
-   # logger.debug(factorPerLabel)
 
    kCounter = 1
    results = []
@@ -59,28 +53,16 @@ def runTests(training, test, labels, targetPath, nn):
       for labelIndex, values in enumerate(nnByLabel):
          confusion = np.zeros((1,len(labels)))
          activationCounter = 0
-         # logger.debug("values shape: " + str(values.shape[0]))
          while activationCounter < values.shape[0]:
             currentActivation = values[activationCounter]
-            # logger.debug(currentActivation.shape)
             searchedLabel = np.argwhere(currentActivation[:labelCount] == 1)
             nIndices = currentActivation[labelCount:labelCount+kCounter].astype(int)
-            # logger.debug("Indices shape: " + str(nIndices.shape))
             neighbourLabels = training[nIndices][:,neurons:]
-            # neighbourLabels = np.argsort(training[currentActivation[labelCount:]][:,neurons:])
-
-            # logger.debug(searchedLabel)
-            # logger.debug(neighbourLabels)
 
             neighbourLabelsSum = np.sum(neighbourLabels, axis=0)
-            # logger.debug(neighbourLabelsSum.shape)
-            # logger.debug(neighbourLabelsSum)
-
             neighbourLabelsSum = neighbourLabelsSum * factorPerLabel
-            # logger.debug(neighbourLabelsSum)
 
             sortedNeighbourLabels = np.argsort(neighbourLabelsSum)[::-1]
-            # logger.debug(sortedNeighbourLabels)
 
             if sortedNeighbourLabels[0] == searchedLabel:
                overallCorrect += 1
@@ -100,19 +82,16 @@ def runTests(training, test, labels, targetPath, nn):
 
                precision = float(relevant) / (idx + 1)
                averagePrecision += (precision * indicator)
-               # logger.debug(str(indicator) + " " + str(relevant) + " " + str(idx) + str(precision) + " " + str(averagePrecision))
 
             if relevant != 0:
                averagePrecision = float(averagePrecision) / relevant
             meanAveragePrecision += averagePrecision
-            # logger.debug(meanAveragePrecision)
             activationCounter += 1
 
          confusionMatrix[labelIndex,:] = confusion
 
-      logger.info(' Accuracy: ' + str(float(overallCorrect)/(overallWrong + overallCorrect)))
       meanAveragePrecision = float(meanAveragePrecision) / test.shape[0]
-      # meanAveragePrecision = float(meanAveragePrecision) #/ values.shape[0]
+      logger.info(' Accuracy: ' + str(float(overallCorrect)/(overallWrong + overallCorrect)))
       logger.info(' Mean average precision: '+str(meanAveragePrecision))
 
       currentTargetPath = targetPath + str(kCounter) + "/"
@@ -129,7 +108,6 @@ def runTests(training, test, labels, targetPath, nn):
       kCounter += 1
 
    results = np.array(results)
-   # logger.debug(results)
 
    logger.info('Writing file ' + targetPath + "overview.csv")
    np.savetxt( targetPath + "overview.csv", results, delimiter=',')
