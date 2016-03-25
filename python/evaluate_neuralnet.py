@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 root = './'
-caffe_root = '/home/simon/Workspaces/caffe'
+caffe_root = '/home/simon/Development/caffe'
 
 sys.path.append(caffe_root + '/tools/extra/')
 import parse_log as pl
@@ -22,7 +22,7 @@ import parse_log as pl
 BATCH_SIZE = 100
 MODEL_FILE = root + 'caffe_models/hybrid_cnn_handsorted_lmdb/deploy.prototxt'
 # PRETRAINED_FILE = root + 'caffe_models/hybrid_cnn_handsorted/handsorted_iter_18000.caffemodel'
-PRETRAINED_FILE = root + 'caffe_models/hybrid_cnn_handsorted_lmdb/snapshots/finetuned_complete_0001_4000_iter_10000.caffemodel'
+PRETRAINED_FILE = root + 'caffe_models/hybrid_cnn_handsorted_lmdb/snapshots/convolutional_001_8000_iter_20000.caffemodel'
 MEAN_FILE = root + 'image_imports/handsorted_lmdb/mean_test.binaryproto'
 USE_GPU = False
 
@@ -71,7 +71,7 @@ def evaluateImageBatch(imagePaths):
    out = net.forward()
    return out['prob']
 
-def testNeuralNet(labels, labelIndexInfoPath):
+def testNeuralNet(labels, labelIndexInfoPath, targetFolder):
    imagesByLabel = [[] for i in range(len(labels))]
    confusionMatrix = np.zeros((len(labels),len(labels)))
    # split info by label
@@ -153,6 +153,10 @@ def testNeuralNet(labels, labelIndexInfoPath):
 
       confusionMatrix[labelIndex,:] = confusion
 
+   logger.info('Writing file ' + targetFolder + "overview.csv")
+   np.savetxt( targetFolder + "overview.csv", np.array([meanAveragePrecision, overallCorrect, overallWrong, float(overallCorrect) / (overallCorrect + overallWrong)]), delimiter=',')
+
+
    logger.info(' Accuracy: ' + str(float(overallCorrect)/(overallWrong + overallCorrect)))
    meanAveragePrecision = float(meanAveragePrecision) / (overallWrong + overallCorrect)
    logger.info(' Mean average precision: '+str(meanAveragePrecision))
@@ -187,13 +191,14 @@ def plotTrainingLossAndAccuracy(trainingLogPath, evaluationTargetPath):
    while counter < ITERATION_VARIATIONS:
 
       fig, ax1 = plt.subplots()
-      ax1.plot(trainingData[:,0], trainingData[:,1], 'r', testData[:,0], testData[:,1], 'b')
+      trainingLossPlot, = ax1.plot(trainingData[:,0], trainingData[:,1], color='r', label='Training set loss')
+      testLossPlot, = ax1.plot(testData[:,0], testData[:,1], label='Test set loss', color='b')
 
       ax1.set_xlabel('Iterations')
       ax1.set_ylabel('Loss')
 
       ax2 = ax1.twinx()
-      ax2.plot(testData[:,0], testData[:,2], 'g')
+      accuracyPlot, = ax2.plot(testData[:,0], testData[:,2], label='Test set accuracy', color='g')
       ax2.set_ylabel('Accuracy')
 
       ax1.axis([0, iterationMaximum, 0, LOSS_MAXIMUM])
@@ -208,11 +213,7 @@ def plotTrainingLossAndAccuracy(trainingLogPath, evaluationTargetPath):
 
       # plt.title(evaluationTargetPath)
 
-      labelTrainingLoss = mpatches.Patch(color='r', label='Training set loss')
-      labelTestLoss = mpatches.Patch(color='b', label='Test set loss')
-      labelTestAccuracy = mpatches.Patch(color='g', label='Test set accuracy')
-
-      plt.legend(handles=[labelTrainingLoss, labelTestLoss, labelTestAccuracy], bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
+      plt.legend([trainingLossPlot, testLossPlot, accuracyPlot], [trainingLossPlot.get_label(), testLossPlot.get_label(), accuracyPlot.get_label()], bbox_to_anchor=(1.1, 1), loc=2, borderaxespad=0.)
 
       plt.savefig(evaluationTargetPath +'lossAndAccuracy_' + str(iterationMaximum) + '.pdf', bbox_inches='tight')
 
@@ -246,9 +247,9 @@ if __name__ == '__main__':
 
    plotTrainingLossAndAccuracy(logFilePath, evaluationTargetPath)
 
-   # sys.exit()
+   sys.exit()
    labels = utility.getLabelStrings(labelIndexMappingPath)
-   [confusionMatrix, meanAveragePrecision, overallCorrect, overallWrong] = testNeuralNet(labels, labelIndexInfoPath)
+   [confusionMatrix, meanAveragePrecision, overallCorrect, overallWrong] = testNeuralNet(labels, labelIndexInfoPath, evaluationTargetPath)
 
    overviewPath = evaluationTargetPath + "overview.csv"
    logger.info('Writing file ' + overviewPath)
