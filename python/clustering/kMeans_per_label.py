@@ -20,9 +20,7 @@ def findKMeansPerLabel(activations, k, labelCount, targetPath, indexLabelMapping
    labels = None
    if indexLabelMapping != None:
       labels = utility.getLabelStrings(indexLabelMapping)
-
-   logger.debug(labelCount)
-
+      
    # split activations by label
    activationsByLabel = []
    counter = 0
@@ -32,10 +30,6 @@ def findKMeansPerLabel(activations, k, labelCount, targetPath, indexLabelMapping
       currentSelection = activations[activations[:, currentLabelIndex] == 1]
       activationsByLabel.append(currentSelection)
       counter += 1
-
-   logger.debug("Activations shape: " + str(activations.shape))
-   logger.debug("Activations by label length: " + str(len(activationsByLabel)))
-   logger.debug("Activations by label 0 shape: " + str(activationsByLabel[0].shape))
 
    counter = 0
    clusters = []

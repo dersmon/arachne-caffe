@@ -10,8 +10,6 @@ logger.setLevel(logging.INFO)
 def runKMeans(activations, labelCount, clusterCount, maxIterations):
 
    firstLabelIndex = activations.shape[1] - labelCount
-   logger.debug('First label index: ' + str(firstLabelIndex))
-
    clusters = []
 
    # Initialize empty cluster clusters.
@@ -82,13 +80,10 @@ def kMeansIteration(clusters, activations, firstLabelIndex):
       if len(membersIndices) != 0:
          updatedPosition /= len(membersIndices)
 
-      logger.debug('Points shape: ' + str(np.array(points).shape))
-      logger.debug('Label histogram shape: ' + str(memberLabelHistogram.shape))
-      logger.debug('Updated position shape: ' + str(updatedPosition.shape))
       if membersIndices.size == 0: # this cluster has no members assigned, create empty members and keep old position
-         logger.info('Cluster without members.')
+         logger.debug('Cluster without members.')
          memberLabelHistogram = np.zeros((activations.shape[1] - firstLabelIndex))
-         logger.info('Histogram: ' + str(memberLabelHistogram))
+         logger.debug('Histogram: ' + str(memberLabelHistogram))
          membersIndices = []
          updatedPosition = cluster['position']
 
@@ -101,8 +96,6 @@ def cleanUp(clusters):
    logger.debug("Cluster count: " + str(len(clusters)))
    data = []
    for cluster in clusters:
-      # logger.debug("Position: " + str(cluster['position'].shape))
-      # logger.debug("Histogram: " + str(cluster['memberLabelHistogram'].shape))
       data.append(np.hstack((cluster['position'], cluster['memberLabelHistogram'])))
    return np.array(data)
 
