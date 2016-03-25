@@ -51,27 +51,6 @@ def startBulkDownload(targetPath, configJSON, showStatisticsPlot):
    imagesPerLabel = min(labelHistogram)
 
    imageDictionary = pickFromSurplus(imagesByLabel, imagesPerLabel)
-   # labelDistributionAdjusted = [(float(labelSum) / x) * adjustmentFactor for x in labelHistogram]
-   #
-
-   # logger.info(labelMapping)
-   # logger.info(labelDistributionAdjusted)
-   #
-   # logger.info('Original images: ' + str(len(imageIds)) + ', filtered: ' + str(len(imageDictionary)) + '.')
-   #
-   # [entityIds, labelMapping] = retreiveEntityIds(configJSON['queries'], True)
-   # imageIds = retreiveImageIds(entityIds)
-   # imageDictionary = createImageDictionary(imageIds)
-   #
-   # labelHistogram = []
-   #
-   # labelHistogram = [0] * len(labelMapping)
-   # labelSum = 0
-   # for key, value in imageDictionary.items():
-   #    labelHistogram[labelMapping.index(value)] += 1
-   #    labelSum += 1
-   #
-   # labelDistributionAdjusted = [(float(labelSum) / x) * adjustmentFactor for x in labelHistogram]
 
    logger.info("Label distribution:")
    logger.info(labelHistogram)
@@ -176,10 +155,7 @@ def streamFiles(exportFolder, dictionary, labelMapping):
    invalidLogPath = exportFolder + '/invalid_image_ids.txt'
    trainingFolderPath = exportFolder + '/train/'
    testFolderPath = exportFolder + '/test/'
-
-   logger.debug(trainingFolderPath)
-   logger.debug(testFolderPath)
-
+   
    for label in labelMapping:
 
       if not os.path.exists(os.path.dirname(trainingFolderPath + label + '/')):
