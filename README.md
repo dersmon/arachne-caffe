@@ -4,4 +4,4 @@ For my Master's Thesis I applied convolutional artifical neural networks to arch
 
 The thesis can be downloaded as PDF [here](http://dersmon.net/thesis_webdemo/masters_thesis.pdf).
 
-Some exampels for classification results can be found [here](http://dersmon.net/thesis_webdemo/).
+Some examples for classification results can be found [here](http://dersmon.net/thesis_webdemo/).
