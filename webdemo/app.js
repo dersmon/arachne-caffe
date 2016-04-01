@@ -1,4 +1,4 @@
-var exampleImagePath = '../examples/images/';
+var exampleImagePath = 'images/demo/';
 
 var currentSelection = 0;
 
@@ -12,7 +12,6 @@ var imageData = null;
 function updateSelection() {
 	updateImage();
 	updateInfo();
-	
 }
 
 function updateImage() {
@@ -21,17 +20,26 @@ function updateImage() {
 
 function updateInfo() {
 	nameLabel.innerHTML = imageData[currentSelection][0];
-	labelList.innerHTML = "";
-	
+
+   labelList.innerHTML = ""
+
 	for(var i = 0; i < imageData[currentSelection][1][0].length; i++)
-	{		
-		labelList.innerHTML += '<li>' 
-			+ imageData[currentSelection][1][0][i] + ': ' + Math.round(imageData[currentSelection][1][1][i] * 10000) * 0.01 + '%'
-			+ '<div class="progress">'
-				+ '<span class="progress-bar" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="width: '+ imageData[currentSelection][1][1][i] * 100 + '%;">' 	
-				+ '</span>'
-			+ '</div>'
-		+ '</li>';
+	{
+      labelList.innerHTML += imageData[currentSelection][1][0][i] + ': ' + Math.round(imageData[currentSelection][1][1][i] * 10000) * 0.01 + '%'
+
+      divObject = document.createElement('div');
+      divObject.className = 'progress'
+
+      spanObject = document.createElement('span')
+      spanObject.className = 'progress-bar'
+      spanObject.setAttribute('role', 'progressbar');
+      spanObject.setAttribute('aria-valuenow', 60);
+      spanObject.setAttribute('aria-valuemin', 0);
+      spanObject.setAttribute('aria-valuemax', 100);
+      spanObject.style.width = (imageData[currentSelection][1][1][i] * 100) + '%';
+
+      divObject.appendChild(spanObject)
+      labelList.appendChild(divObject)
 	}
 }
 
@@ -55,9 +63,9 @@ function nextImage() {
 
 
 $(function() {
-   $.getJSON('results.json', function(data) {	 
-	   imageData = data;	   
-	   currentSelection = 0;   
+   $.getJSON('image_predictions/demo.json', function(data) {
+	   imageData = data;
+	   currentSelection = 0;
 	   updateSelection();
    });
 })
