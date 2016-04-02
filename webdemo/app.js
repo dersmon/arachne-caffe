@@ -19,9 +19,20 @@ function updateImage() {
 }
 
 function updateInfo() {
-	nameLabel.innerHTML = imageData[currentSelection][0];
+   glyphSpan = document.createElement('span');
+   glyphSpan.className = "glyphicon glyphicon-link"
+   glyphSpan.setAttribute("aria-hidden", true)
 
-   labelList.innerHTML = ""
+   arachneLink = document.createElement('a');
+   arachneLink.href = "http://arachne.dainst.org/entity/" + imageData[currentSelection][0].slice(0, -4);
+   arachneLink.appendChild(glyphSpan)
+   arachneLink.innerHTML += "Arachne entity " + imageData[currentSelection][0].slice(0, -4) + " ";
+
+   while (nameLabel.firstChild) {
+       nameLabel.removeChild(nameLabel.firstChild);
+   }
+   nameLabel.appendChild(arachneLink);
+   labelList.innerHTML = "";
 
 	for(var i = 0; i < imageData[currentSelection][1][0].length; i++)
 	{
